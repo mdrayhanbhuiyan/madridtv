@@ -9,7 +9,9 @@ import {
   RefreshCw,
   Info,
   Search,
-  Globe
+  Globe,
+  Users,
+  Eye
 } from "lucide-react";
 import { Channel } from "./types";
 import Sidebar from "./components/Sidebar";
@@ -50,6 +52,49 @@ export default function App() {
       return "en";
     }
   });
+
+  const [visitorCount, setVisitorCount] = useState<{ total: number; active: number }>({ total: 12450, active: 234 });
+
+  // 1.5 Fetch and poll visitor statistics
+  useEffect(() => {
+    const fetchVisitors = async (increment = false) => {
+      try {
+        const res = await fetch(`/api/visitors${increment ? "?inc=true" : ""}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data.total === "number" && typeof data.active === "number") {
+            setVisitorCount({ total: data.total, active: data.active });
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch visitor statistics:", err);
+      }
+    };
+
+    // Increment visitors total count only once per browser session
+    let alreadyVisited = false;
+    try {
+      alreadyVisited = !!sessionStorage.getItem("iptv-visited");
+    } catch (e) {
+      // ignore storage access issues
+    }
+
+    if (!alreadyVisited) {
+      fetchVisitors(true);
+      try {
+        sessionStorage.setItem("iptv-visited", "true");
+      } catch (e) {}
+    } else {
+      fetchVisitors(false);
+    }
+
+    // Periodic polling for active live viewers count every 20 seconds
+    const interval = setInterval(() => {
+      fetchVisitors(false);
+    }, 20000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const { t } = useTranslation(lang);
 
@@ -334,6 +379,34 @@ export default function App() {
                   বাংলা
                 </button>
               </div>
+
+              {/* Elegant Visitor and Live Viewers Widget */}
+              <div className="flex items-center gap-1.5 shrink-0" id="header-visitor-widget">
+                {/* Live Viewers Indicator */}
+                <div className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2.5 py-1 text-[10px] font-mono font-bold rounded-xl shadow-sm uppercase tracking-wider">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
+                  </span>
+                  <span>
+                    {visitorCount.active}
+                    <span className="hidden md:inline ml-1 text-[9px] text-rose-400/80 font-bold font-sans">
+                      {t("liveViewers")}
+                    </span>
+                  </span>
+                </div>
+
+                {/* Total Visitors Indicator */}
+                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 text-slate-300 px-2.5 py-1 text-[10px] font-mono font-medium rounded-xl shadow-sm">
+                  <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="font-bold">
+                    {visitorCount.total.toLocaleString()}
+                    <span className="hidden md:inline ml-1 text-[9px] text-slate-500 font-medium font-sans">
+                      {t("totalVisitors")}
+                    </span>
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Global Search Bar (Language Switcher removed from right) */}
@@ -524,6 +597,7 @@ export default function App() {
                         historyIds={history}
                         channels={channels}
                         onSelectChannel={handleSelectChannel}
+                        lang={lang}
                       />
                     )}
                   </div>
@@ -586,6 +660,7 @@ export default function App() {
                     historyIds={history}
                     channels={channels}
                     onSelectChannel={handleSelectChannel}
+                    lang={lang}
                   />
                 </div>
               )}

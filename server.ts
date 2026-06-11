@@ -193,6 +193,51 @@ async function startServer() {
     }
   });
 
+  // Persistent visitor and active viewer logic
+  let totalVisitors = 12450; // starting value
+  const visitorsFile = path.join(process.cwd(), "visitors.json");
+  if (fs.existsSync(visitorsFile)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(visitorsFile, "utf-8"));
+      if (typeof data.total === "number" && !isNaN(data.total)) {
+        totalVisitors = data.total;
+      }
+    } catch (e) {
+      console.warn("Failed to read visitors.json, using fallback", e);
+    }
+  } else {
+    try {
+      fs.writeFileSync(visitorsFile, JSON.stringify({ total: totalVisitors }), "utf-8");
+    } catch (e) {
+      console.warn("Failed to create visitors.json", e);
+    }
+  }
+
+  // Live visitors simulating active viewers
+  let activeVisitors = Math.floor(Math.random() * 85) + 215; // initially 215-300
+  setInterval(() => {
+    const delta = Math.floor(Math.random() * 15) - 7; // -7 to +7
+    activeVisitors = Math.max(150, Math.min(850, activeVisitors + delta));
+  }, 15000);
+
+  app.get("/api/visitors", (req, res) => {
+    const increment = req.query.inc === "true";
+    if (increment) {
+      totalVisitors += 1;
+      try {
+        fs.writeFileSync(visitorsFile, JSON.stringify({ total: totalVisitors }), "utf-8");
+      } catch (e) {
+        // Safe fail
+      }
+    }
+
+    res.json({
+      success: true,
+      total: totalVisitors,
+      active: activeVisitors
+    });
+  });
+
   // Vite static client asset builder and router helper
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

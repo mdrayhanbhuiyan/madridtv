@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Channel } from "../types";
 import { getCategoryBadgeStyles } from "./ChannelCard";
+import { Language, useTranslation } from "../utils/translations";
 
 interface LivePlayerProps {
   channel: Channel;
@@ -47,6 +48,7 @@ interface LivePlayerProps {
   historyIds?: string[];
   channels?: Channel[];
   onSelectChannel?: (channel: Channel) => void;
+  lang?: Language;
 }
 
 const FILTER_PRESETS = [
@@ -69,8 +71,10 @@ export default function LivePlayer({
   onToggleTheater,
   historyIds,
   channels,
-  onSelectChannel
+  onSelectChannel,
+  lang = "en"
 }: LivePlayerProps) {
+  const { t } = useTranslation(lang);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -774,10 +778,10 @@ export default function LivePlayer({
   };
 
   const handlePipClick = async () => {
-    if (onToggleMini) {
-      onToggleMini();
-    } else {
+    if (pipSupported) {
       await triggerPictureInPicture();
+    } else if (onToggleMini) {
+      onToggleMini();
     }
   };
 
@@ -1239,17 +1243,20 @@ export default function LivePlayer({
               <Tv className="w-8 h-8 animate-pulse" />
             </div>
             <div className="max-w-xs px-2">
-              <h4 className="text-sm font-bold font-display text-white">Playing in PiP Mode</h4>
+              <h4 className="text-sm font-bold font-display text-white">{t("pipActive")}</h4>
               <p className="text-[11px] text-slate-400 mt-1.5 font-sans leading-relaxed">
-                Madridtvlive is playing in a floating browser window. Browse other channels freely without stopping the broadcast stream!
+                {lang === "bn"
+                  ? "মাড্রিডটিভিলাইভ ভাসমান উইন্ডোতে প্লে হচ্ছে। ভিডিও চলাকালীন অন্যান্য চ্যানেলে অবাধে ব্রাউজ করুন!"
+                  : "Madridtvlive is playing in a floating video player. Browse other channels freely without stopping the broadcast stream!"
+                }
               </p>
             </div>
             <button
               onClick={triggerPictureInPicture}
-              className="mt-1 px-4 py-2 bg-lime-500 hover:bg-lime-400 text-zinc-950 font-extrabold rounded-xl text-xs hover:scale-105 transition-all shadow-md shadow-lime-950/20 flex items-center gap-2"
+              className="mt-1 px-4 py-2 bg-lime-500 hover:bg-lime-400 text-zinc-950 font-extrabold rounded-xl text-xs hover:scale-105 transition-all shadow-md shadow-lime-950/20 flex items-center gap-2 cursor-pointer"
               id="player-pip-return-btn"
             >
-              Return to Inline Player
+              {lang === "bn" ? "প্লেয়ারে ফিরে যান" : "Return to Inline Player"}
             </button>
           </div>
         )}

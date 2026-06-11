@@ -67,7 +67,9 @@ export const translations = {
     minutes: "m",
     seconds: "s",
     elapsed: "LIVE / IN PROGRESS",
-    fifaSpecialDashboard: "FIFA 2026 Arena Dashboard"
+    fifaSpecialDashboard: "FIFA 2026 Arena Dashboard",
+    totalVisitors: "Total Visitors",
+    liveViewers: "Live Viewers"
   },
   bn: {
     searchPlaceholder: "চ্যানেল, গ্রুপ বা ধরণ খুঁজুন...",
@@ -135,7 +137,9 @@ export const translations = {
     minutes: "মিনিট",
     seconds: "সেকেন্ড",
     elapsed: "লাইভ সম্প্রচার চলছে",
-    fifaSpecialDashboard: "ফিফা ২০২৬ স্পেশাল ড্যাশবোর্ড"
+    fifaSpecialDashboard: "ফিফা ২০২৬ স্পেশাল ড্যাশবোর্ড",
+    totalVisitors: "মোট ভিজিটর",
+    liveViewers: "লাইভ দর্শক"
   }
 };
 
