@@ -90,15 +90,15 @@ export default function ChannelCard({
       onClick={onSelect}
       className={`group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1.5 border backdrop-blur-xl ${
         isActive 
-          ? "bg-zinc-950/80 glow-active-premium border-orange-500" 
-          : "bg-zinc-950/40 border-white/5 hover:bg-zinc-900/40 glow-hover-premium hover:border-orange-500/20"
+          ? "bg-zinc-950/80 glow-active-premium border-lime-500" 
+          : "bg-zinc-950/40 border-white/5 hover:bg-zinc-900/40 glow-hover-premium hover:border-lime-500/20"
       }`}
       id={`channel-card-${channel.id}`}
     >
       {/* Featured Accent Corner Tag */}
       {channel.isFeatured && (
-        <div className="absolute top-3 left-3 z-20 bg-orange-600/90 text-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md flex items-center gap-1 font-mono shadow-md backdrop-blur-lg border border-orange-400/25">
-          <Star className="w-2.5 h-2.5 fill-current animate-pulse text-amber-300" />
+        <div className="absolute top-3 left-3 z-20 bg-lime-500 text-zinc-950 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-md flex items-center gap-1 font-mono shadow-md backdrop-blur-lg border border-lime-400/25">
+          <Star className="w-2.5 h-2.5 fill-current animate-pulse text-zinc-950" />
           <span>Featured</span>
         </div>
       )}
@@ -139,7 +139,7 @@ export default function ChannelCard({
 
         {/* Play Button Overlay */}
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15 flex items-center justify-center backdrop-blur-[2px]">
-          <div className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center scale-75 group-hover:scale-100 transition-all duration-300 shadow-xl shadow-orange-500/40 border border-orange-450">
+          <div className="w-11 h-11 bg-lime-500 text-zinc-950 rounded-full flex items-center justify-center scale-75 group-hover:scale-100 transition-all duration-300 shadow-xl shadow-lime-500/40 border border-lime-400">
             <Play className="w-5 h-5 fill-current ml-0.5" />
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function ChannelCard({
       {/* Bottom Profile Details Panel */}
       <div className="p-4 flex flex-col justify-between gap-3 bg-zinc-950/60 backdrop-blur-md">
         <div>
-          <h3 className="text-sm font-bold text-white tracking-tight line-clamp-1 font-sans group-hover:text-orange-400 transition-colors">
+          <h3 className="text-sm font-bold text-white tracking-tight line-clamp-1 font-sans group-hover:text-lime-400 transition-colors">
             {channel.name}
           </h3>
           <div className="flex items-center gap-2 mt-1.5">

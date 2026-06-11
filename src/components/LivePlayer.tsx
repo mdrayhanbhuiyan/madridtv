@@ -681,7 +681,7 @@ export default function LivePlayer({
   }[aspectRatio];
 
   return (
-    <div className={`flex flex-col bg-black/90 backdrop-blur-3xl overflow-hidden border border-orange-500/20 hover:border-orange-500/35 shadow-2xl shadow-black/90 transition-all duration-500 relative glow-hover-premium ${isMini ? "rounded-2xl shadow-orange-500/5 border-orange-500/30" : "rounded-3xl"}`} id="live-player-container-root">
+    <div className={`flex flex-col bg-black/90 backdrop-blur-3xl overflow-hidden border border-lime-500/20 hover:border-lime-500/35 shadow-2xl shadow-black/90 transition-all duration-500 relative glow-hover-premium ${isMini ? "rounded-2xl shadow-lime-500/5 border-lime-500/30" : "rounded-3xl"}`} id="live-player-container-root">
       
       {/* Floating Mini Player Header */}
       {isMini && (
@@ -694,7 +694,7 @@ export default function LivePlayer({
               e.stopPropagation();
               if (onToggleMini) onToggleMini();
             }}
-            className="w-5 h-5 rounded-full bg-black/50 hover:bg-orange-600 border border-white/10 flex items-center justify-center text-white hover:text-white transition-colors text-[9px] font-bold"
+            className="w-5 h-5 rounded-full bg-black/50 hover:bg-lime-600 border border-white/10 flex items-center justify-center text-white hover:text-zinc-950 transition-colors text-[9px] font-bold"
             title="Close Picture-in-Picture"
             id="mini-player-close-btn"
           >
@@ -727,8 +727,8 @@ export default function LivePlayer({
 
         {/* HUD Hotkey OSD Toast Overlay */}
         {hudFeedback && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-45 bg-black/95 backdrop-blur-2xl border border-orange-500/50 text-orange-400 font-mono text-[10px] font-extrabold px-3.5 py-2.5 rounded-xl flex items-center gap-2 shadow-2xl pointer-events-none animate-slide-in select-none glow-orange" id="hud-osd-feedback-overlay">
-            <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-45 bg-black/95 backdrop-blur-2xl border border-lime-500/50 text-lime-400 font-mono text-[10px] font-extrabold px-3.5 py-2.5 rounded-xl flex items-center gap-2 shadow-2xl pointer-events-none animate-slide-in select-none glow-lemon" id="hud-osd-feedback-overlay">
+            <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
             <span className="uppercase tracking-widest">{hudFeedback}</span>
           </div>
         )}
@@ -737,8 +737,8 @@ export default function LivePlayer({
         {isStatsActive && (
           <div className="absolute top-4 left-4 z-40 bg-zinc-950/90 backdrop-blur-2xl border border-white/5 p-4 rounded-2xl font-mono text-[10px] text-slate-300 pointer-events-auto w-64 shadow-2xl select-none" id="stats-telemetry-box">
             <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2 gap-3">
-              <span className="text-orange-400 font-extrabold flex items-center gap-1.5 uppercase tracking-wide">
-                <Activity className="w-3.5 h-3.5 text-orange-550 animate-pulse" /> Telemetry Info
+              <span className="text-lime-400 font-extrabold flex items-center gap-1.5 uppercase tracking-wide">
+                <Activity className="w-3.5 h-3.5 text-lime-550 animate-pulse" /> Telemetry Info
               </span>
               <button 
                 onClick={() => setIsStatsActive(false)}
@@ -753,8 +753,8 @@ export default function LivePlayer({
               <div className="flex justify-between"><span className="text-slate-500">Bitrate Sync (Sim):</span> <span className="text-white font-semibold">{simulatedBitrate}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Render FPS:</span> <span className="text-white font-semibold">{simulatedFps} Fps</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Layout Scaling:</span> <span className="text-slate-200 uppercase font-semibold text-[9px]">{aspectRatio}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Visual EQ Preset:</span> <span className="text-orange-400 font-semibold">{FILTER_PRESETS.find(p => p.id === eqFilter)?.name}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Sleep Countdown:</span> <span className="text-amber-400 font-semibold">{sleepMinutesRemaining !== null ? `${sleepMinutesRemaining} Min(s) active` : "Standby Inactive"}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Visual EQ Preset:</span> <span className="text-lime-400 font-semibold">{FILTER_PRESETS.find(p => p.id === eqFilter)?.name}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Sleep Countdown:</span> <span className="text-lime-400 font-semibold">{sleepMinutesRemaining !== null ? `${sleepMinutesRemaining} Min(s) active` : "Standby Inactive"}</span></div>
             </div>
           </div>
         )}
@@ -765,13 +765,13 @@ export default function LivePlayer({
             {/* Swiping Right -> previous channel */}
             {swipeDelta > 0 && onPrevChannel && (
               <div 
-                className="absolute left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 bg-black/90 backdrop-blur-xl border border-orange-500/25 px-4 py-3 rounded-2xl pointer-events-none transition-all duration-150 glow-orange/15" 
+                className="absolute left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 bg-black/90 backdrop-blur-xl border border-lime-500/25 px-4 py-3 rounded-2xl pointer-events-none transition-all duration-150 glow-lemon/15" 
                 style={{ 
                   opacity: Math.min(Math.abs(swipeDelta) / 60, 0.95), 
                   transform: `translateY(-50%) scale(${Math.min(0.85 + Math.abs(swipeDelta) / 300, 1.15)})` 
                 }}
               >
-                <ChevronLeft className="w-6 h-6 text-orange-400 animate-pulse" />
+                <ChevronLeft className="w-6 h-6 text-lime-400 animate-pulse" />
                 <span className="text-[10px] font-mono tracking-wider text-slate-300 uppercase font-bold">Prev Channel</span>
               </div>
             )}
@@ -779,13 +779,13 @@ export default function LivePlayer({
             {/* Swiping Left -> next channel */}
             {swipeDelta < 0 && onNextChannel && (
               <div 
-                className="absolute right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 bg-black/90 backdrop-blur-xl border border-orange-500/25 px-4 py-3 rounded-2xl pointer-events-none transition-all duration-150 glow-orange/15"
+                className="absolute right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 bg-black/90 backdrop-blur-xl border border-lime-500/25 px-4 py-3 rounded-2xl pointer-events-none transition-all duration-150 glow-lemon/15"
                 style={{ 
                   opacity: Math.min(Math.abs(swipeDelta) / 60, 0.95), 
                   transform: `translateY(-50%) scale(${Math.min(0.85 + Math.abs(swipeDelta) / 300, 1.15)})` 
                 }}
               >
-                <ChevronRight className="w-6 h-6 text-orange-400 animate-pulse" />
+                <ChevronRight className="w-6 h-6 text-lime-400 animate-pulse" />
                 <span className="text-[10px] font-mono tracking-wider text-slate-300 uppercase font-bold">Next Channel</span>
               </div>
             )}
@@ -795,9 +795,9 @@ export default function LivePlayer({
         {/* Dynamic speedometer connection diagnostic overlay */}
         {isDiagnosticsOpen && (
           <div className="absolute inset-0 bg-black/75 backdrop-blur-3xl z-45 flex flex-col items-center justify-center p-6 text-center select-none animate-fade-in pointer-events-auto rounded-t-2xl" id="diagnostics-panel-overlay">
-            <div className="max-w-md w-full bg-zinc-950/90 border border-orange-500/30 rounded-2xl p-6 relative overflow-hidden shadow-2xl glow-orange/20">
+            <div className="max-w-md w-full bg-zinc-950/90 border border-lime-500/30 rounded-2xl p-6 relative overflow-hidden shadow-2xl glow-lemon/20">
               {/* Retro speed sweep background aura */}
-              <div className="absolute -top-24 -left-20 w-48 h-48 bg-orange-500/15 blur-3xl pointer-events-none rounded-full" />
+              <div className="absolute -top-24 -left-20 w-48 h-48 bg-lime-500/15 blur-3xl pointer-events-none rounded-full" />
               <div className="absolute -bottom-24 -right-20 w-48 h-48 bg-emerald-500/15 blur-3xl pointer-events-none rounded-full" />
 
               <button 
@@ -809,7 +809,7 @@ export default function LivePlayer({
               </button>
 
               <div className="flex flex-col items-center gap-4 relative z-10">
-                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20 text-orange-400">
+                <div className="w-12 h-12 rounded-full bg-lime-500/10 flex items-center justify-center border border-lime-500/20 text-lime-400">
                   <Gauge className={`w-6 h-6 ${isDiagnosing ? "animate-spin" : ""}`} />
                 </div>
                 <div>
@@ -826,24 +826,24 @@ export default function LivePlayer({
                   <div className="flex justify-between items-center border-b border-white/5 pb-2">
                     <span className="text-slate-500 text-left">Node Latency:</span>
                     <span className="font-bold text-white">
-                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin inline" /> : (diagnosticPing ? `${diagnosticPing} ms` : "---")}
+                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-lime-400 animate-spin inline" /> : (diagnosticPing ? `${diagnosticPing} ms` : "---")}
                     </span>
                   </div>
                   <div className="flex justify-between items-center border-b border-white/5 pb-2">
                     <span className="text-slate-500 text-left">Download Bandwidth:</span>
                     <span className="font-bold text-white">
-                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin inline" /> : (diagnosticSpeed ? diagnosticSpeed : "---")}
+                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-lime-400 animate-spin inline" /> : (diagnosticSpeed ? diagnosticSpeed : "---")}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-500 text-left">Optimization Score:</span>
                     <span className="font-extrabold text-emerald-400 flex items-center gap-1">
-                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin inline" /> : (diagnosticPing ? `${optimizationScore}% (Excellent)` : "94%")}
+                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-lime-400 animate-spin inline" /> : (diagnosticPing ? `${optimizationScore}% (Excellent)` : "94%")}
                     </span>
                   </div>
                 </div>
 
-                <div className="text-[10px] text-orange-400 bg-orange-500/5 border border-orange-500/10 rounded-lg p-2.5 w-full leading-relaxed min-h-[48px] flex items-center justify-center font-mono">
+                <div className="text-[10px] text-lime-400 bg-lime-500/5 border border-lime-500/10 rounded-lg p-2.5 w-full leading-relaxed min-h-[48px] flex items-center justify-center font-mono">
                   {diagnosticMessage || "Ready to run speed check. Click optimization trigger."}
                 </div>
 
@@ -851,7 +851,7 @@ export default function LivePlayer({
                   <button
                     onClick={runSpeedDiagnostics}
                     disabled={isDiagnosing}
-                    className="flex-1 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white rounded-lg text-[10px] sm:text-xs font-semibold tracking-wide transition-all uppercase flex items-center justify-center gap-1.5 shadow"
+                    className="flex-1 py-2 bg-lime-500 hover:bg-lime-400 disabled:opacity-50 text-zinc-950 rounded-lg text-[10px] sm:text-xs font-bold tracking-wide transition-all uppercase flex items-center justify-center gap-1.5 shadow"
                   >
                     {isDiagnosing ? "Optimizing..." : "Start Optimization"}
                   </button>
@@ -877,7 +877,7 @@ export default function LivePlayer({
         {/* Loading Spinner overlay */}
         {isLoading && !hasError && !isPipActive && (
           <div className="absolute inset-0 bg-black/85 backdrop-blur-xs flex flex-col gap-3 items-center justify-center transition-opacity duration-300" id="player-loading-overlay">
-            <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+            <Loader2 className="w-10 h-10 text-lime-500 animate-spin" />
             <div className="text-sm font-mono text-slate-300 tracking-wide font-medium flex items-center gap-1.5">
               <span>Resolving Live Feed...</span>
             </div>
@@ -887,7 +887,7 @@ export default function LivePlayer({
         {/* Immersive PiP active glass overlay */}
         {isPipActive && !hasError && (
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col gap-4 items-center justify-center text-center z-10 p-6 animate-fade-in" id="player-pip-active-overlay">
-            <div className="w-16 h-16 bg-orange-500/10 rounded-2xl border border-orange-500/25 flex items-center justify-center text-orange-400">
+            <div className="w-16 h-16 bg-lime-500/10 rounded-2xl border border-lime-500/25 flex items-center justify-center text-lime-400">
               <Tv className="w-8 h-8 animate-pulse" />
             </div>
             <div className="max-w-xs px-2">
@@ -898,7 +898,7 @@ export default function LivePlayer({
             </div>
             <button
               onClick={triggerPictureInPicture}
-              className="mt-1 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-xl text-xs hover:scale-105 transition-all shadow-md shadow-orange-950/20 flex items-center gap-2"
+              className="mt-1 px-4 py-2 bg-lime-500 hover:bg-lime-400 text-zinc-950 font-extrabold rounded-xl text-xs hover:scale-105 transition-all shadow-md shadow-lime-950/20 flex items-center gap-2"
               id="player-pip-return-btn"
             >
               Return to Inline Player
@@ -909,7 +909,7 @@ export default function LivePlayer({
         {/* Stream Error Overlay */}
         {hasError && (
           <div className="absolute inset-0 bg-black/90 flex flex-col gap-5 items-center justify-center p-6 text-center z-10" id="player-error-overlay">
-            <div className="w-14 h-14 bg-[#32130e] rounded-2xl border border-orange-500/30 flex items-center justify-center text-orange-500">
+            <div className="w-14 h-14 bg-[#142205] rounded-2xl border border-lime-500/30 flex items-center justify-center text-lime-400">
               <AlertTriangle className="w-7 h-7" />
             </div>
             <div className="max-w-md">
@@ -920,7 +920,7 @@ export default function LivePlayer({
             </div>
             <button
               onClick={reloadStream}
-              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-orange-950/40 text-xs transition-all duration-200"
+              className="flex items-center gap-2 bg-lime-500 hover:bg-lime-400 text-zinc-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-lime-950/40 text-xs transition-all duration-200"
               id="player-retry-button"
             >
               <RefreshCw className="w-4 h-4" />
@@ -950,7 +950,7 @@ export default function LivePlayer({
             <div className="flex items-center gap-2" id="controls-left-slot">
               <button
                 onClick={togglePlay}
-                className="p-2 text-white hover:text-orange-400 bg-black/40 hover:bg-white/5 rounded-lg transition-all"
+                className="p-2 text-white hover:text-lime-400 bg-black/40 hover:bg-white/5 rounded-lg transition-all"
                 title={isPlaying ? "Pause Stream" : "Play Stream"}
                 id="playback-toggle-btn"
               >
@@ -961,7 +961,7 @@ export default function LivePlayer({
               {onPrevChannel && (
                 <button
                   onClick={onPrevChannel}
-                  className="p-1.5 text-slate-300 hover:text-orange-400 hover:bg-white/5 rounded-lg text-xs"
+                  className="p-1.5 text-slate-300 hover:text-lime-400 hover:bg-white/5 rounded-lg text-xs"
                   title="Previous Channel"
                   id="prev-chan-btn"
                 >
@@ -971,7 +971,7 @@ export default function LivePlayer({
               {onNextChannel && (
                 <button
                   onClick={onNextChannel}
-                  className="p-1.5 text-slate-300 hover:text-orange-400 hover:bg-white/5 rounded-lg text-xs"
+                  className="p-1.5 text-slate-300 hover:text-lime-400 hover:bg-white/5 rounded-lg text-xs"
                   title="Next Channel"
                   id="next-chan-btn"
                 >
@@ -984,7 +984,7 @@ export default function LivePlayer({
             <div className="flex items-center gap-2 group/vol max-w-28 md:max-w-40 flex-1 justify-center" id="controls-mid-volume-slot">
               <button
                 onClick={toggleMute}
-                className="p-2 text-white hover:text-orange-400 rounded-lg transition-all"
+                className="p-2 text-white hover:text-lime-400 rounded-lg transition-all"
                 title={isMuted ? "Unmute" : "Mute Sound"}
                 id="mute-toggle-btn"
               >
@@ -997,7 +997,7 @@ export default function LivePlayer({
                 step="0.05"
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-400"
                 id="volume-slider-input"
               />
             </div>
@@ -1023,7 +1023,7 @@ export default function LivePlayer({
                     !isMetadataLoaded || hasError
                       ? "opacity-30 cursor-not-allowed text-slate-500"
                       : isMini || isPipActive 
-                        ? "text-orange-400 bg-orange-500/10 border border-orange-500/20 shadow-sm" 
+                        ? "text-lime-400 bg-lime-500/10 border border-lime-500/20 shadow-sm" 
                         : "text-slate-300 hover:text-white hover:bg-white/5"
                   }`}
                   title={
@@ -1044,7 +1044,7 @@ export default function LivePlayer({
               {/* Fullscreen control */}
               <button
                 onClick={toggleFullscreen}
-                className="p-2 text-white hover:text-orange-400 bg-black/40 hover:bg-white/5 rounded-lg transition-all"
+                className="p-2 text-white hover:text-lime-400 bg-black/40 hover:bg-white/5 rounded-lg transition-all"
                 title={isFullscreen ? "Exit Full Screen" : "Fill Full Screen"}
                 id="fullscreen-toggle-btn"
               >
@@ -1063,7 +1063,7 @@ export default function LivePlayer({
           {/* EQ Filter pills */}
           <div className="flex items-center gap-2" id="eq-presets-selector-deck">
             <span className="text-slate-500 font-mono flex items-center gap-1 text-[10px]">
-              <Sliders className="w-3.5 h-3.5 text-orange-400" />
+              <Sliders className="w-3.5 h-3.5 text-lime-400" />
               <span>VISUAL EQ:</span>
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -1076,7 +1076,7 @@ export default function LivePlayer({
                   }}
                   className={`px-2.5 py-1 rounded-lg text-[9px] font-mono tracking-wider transition-all duration-150 border uppercase ${
                     eqFilter === preset.id
-                      ? "bg-orange-500/10 border-orange-500/30 text-orange-400 font-bold"
+                      ? "bg-lime-500/10 border-lime-500/30 text-lime-400 font-bold"
                       : "bg-black/20 border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
                   }`}
                 >
@@ -1090,7 +1090,7 @@ export default function LivePlayer({
             {/* Sleep Timer Settings Selection */}
             <div className="flex items-center gap-2">
               <span className="text-slate-500 font-mono flex items-center gap-1 text-[10px]">
-                <Timer className="w-3.5 h-3.5 text-orange-400" />
+                <Timer className="w-3.5 h-3.5 text-lime-400" />
                 <span>SLEEP TIMER:</span>
               </span>
               <select
@@ -1106,7 +1106,7 @@ export default function LivePlayer({
                     showHotkeyFeedback(`Sleep in ${mins} Min(s)`);
                   }
                 }}
-                className="bg-zinc-900 border border-white/10 hover:border-orange-500/30 text-slate-300 rounded-lg px-2 py-0.5 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-orange-500 font-medium transition-all cursor-pointer"
+                className="bg-zinc-900 border border-white/10 hover:border-lime-500/30 text-slate-300 rounded-lg px-2 py-0.5 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-lime-500 font-medium transition-all cursor-pointer"
               >
                 <option value="off">Inactive</option>
                 <option value="1">1 Min (Demo)</option>
@@ -1115,7 +1115,7 @@ export default function LivePlayer({
                 <option value="60">1 Hour</option>
               </select>
               {sleepMinutesRemaining !== null && (
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Timer Active" />
+                <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" title="Timer Active" />
               )}
             </div>
 
@@ -1129,12 +1129,12 @@ export default function LivePlayer({
                 }}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-mono tracking-wide transition-all uppercase ${
                   isStatsActive
-                    ? "bg-orange-500/15 border-orange-500/30 text-orange-400 font-bold"
+                    ? "bg-lime-500/15 border-lime-500/30 text-lime-400 font-bold"
                     : "bg-black/20 border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
                 title="Toggle Real-Time Broadcast Codec Telemetry [N Key]"
               >
-                <Info className="w-3.5 h-3.5 text-orange-400" />
+                <Info className="w-3.5 h-3.5 text-lime-400" />
                 <span>Stats</span>
               </button>
 
@@ -1144,12 +1144,12 @@ export default function LivePlayer({
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-white/5 bg-black/20 hover:bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono tracking-wide transition-all uppercase"
                   title="Show Live keyboard controller system mappings"
                 >
-                  <Keyboard className="w-3.5 h-3.5 text-orange-400" />
+                  <Keyboard className="w-3.5 h-3.5 text-lime-400" />
                   <span>Hotkeys</span>
                 </button>
                 {/* Visual tooltip popover display */}
                 <div className="absolute right-0 bottom-full mb-2 w-64 bg-zinc-950/95 backdrop-blur-md border border-white/10 p-3.5 rounded-xl shadow-2xl scale-0 group-hover/hotkeys:scale-100 origin-bottom-right transition-all duration-200 z-55 pointer-events-none text-[10px] text-slate-300 space-y-2 font-mono" style={{ bottom: '120%' }}>
-                  <h5 className="font-bold text-orange-400 text-[10.5px] border-b border-white/15 pb-1 uppercase tracking-wider flex items-center gap-1">
+                  <h5 className="font-bold text-lime-400 text-[10.5px] border-b border-white/15 pb-1 uppercase tracking-wider flex items-center gap-1">
                     <Keyboard className="w-3.5 h-3.5" /> Keyboard Shortcuts
                   </h5>
                   <div className="space-y-1 text-slate-400 leading-relaxed">
@@ -1175,8 +1175,8 @@ export default function LivePlayer({
       {!isMini && (
         <div className="px-4 py-3 md:px-6 bg-zinc-950/50 backdrop-blur-2xl border-t border-white/5 flex flex-wrap items-center justify-between gap-y-2.5 gap-x-6 text-[11px] font-sans" id="connection-booster-tuner-bar">
           <div className="flex items-center gap-2" id="speed-booster-selection-deck">
-            <span className="text-orange-400 font-mono flex items-center gap-1 text-[10px] font-bold">
-              <Zap className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
+            <span className="text-lime-400 font-mono flex items-center gap-1 text-[10px] font-bold">
+              <Zap className="w-3.5 h-3.5 text-lime-500 animate-pulse" />
               <span>NET ACCELERATOR:</span>
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -1191,14 +1191,14 @@ export default function LivePlayer({
                     setBufferMode(preset.id as any);
                     showHotkeyFeedback(`Net Optimizer: ${preset.name}`);
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-[9px] font-mono tracking-wider transition-all duration-150 uppercase font-semibold flex items-center gap-1 border cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-[9px] font-mono tracking-wider transition-all duration-150 uppercase font-bold flex items-center gap-1 border cursor-pointer ${
                     bufferMode === preset.id
-                      ? "bg-gradient-to-r from-orange-600 to-orange-500 text-white border-orange-400 shadow shadow-orange-500/30 glow-orange"
+                      ? "bg-gradient-to-r from-lime-600 to-lime-500 text-zinc-950 border-lime-400 shadow shadow-lime-500/30 glow-lemon"
                       : "bg-black/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
                   }`}
                   title={preset.desc}
                 >
-                  {bufferMode === preset.id && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                  {bufferMode === preset.id && <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 animate-ping" />}
                   {preset.name}
                 </button>
               ))}
@@ -1207,13 +1207,13 @@ export default function LivePlayer({
 
           <div className="flex items-center gap-2.5 flex-wrap" id="speedometer-status-deck">
             <span className="text-slate-500 font-mono text-[10px] flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${bufferMode === "speed-booster" ? "bg-orange-400 animate-pulse" : (bufferMode === "stable-hd" ? "bg-cyan-400 animate-pulse" : "bg-emerald-450 bg-emerald-400")}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${bufferMode === "speed-booster" ? "bg-lime-400 animate-pulse" : (bufferMode === "stable-hd" ? "bg-cyan-400 animate-pulse" : "bg-emerald-450 bg-emerald-400")}`} />
               LATENCY STATUS: <span className="text-slate-300 font-bold uppercase">{bufferMode === "speed-booster" ? "Fast Start (1.2s)" : (bufferMode === "stable-hd" ? "Buffered (HD)" : latencyInfo)}</span>
             </span>
 
             <button
               onClick={() => setIsDiagnosticsOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-orange-500/30 bg-orange-950/40 hover:bg-orange-600/30 text-orange-400 font-semibold text-[10px] font-mono hover:text-orange-300 transition-all uppercase shadow cursor-pointer glow-orange/10"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-lime-500/30 bg-lime-950/40 hover:bg-lime-600/30 text-lime-400 font-semibold text-[10px] font-mono hover:text-lime-300 transition-all uppercase shadow cursor-pointer glow-lemon/10"
               title="Run Speed Jitter & Buffer Optimizer Diagnostics"
               id="speedometer-test-trigger"
             >
@@ -1242,7 +1242,7 @@ export default function LivePlayer({
                 }}
               />
             ) : (
-              <Tv className="w-5 h-5 text-orange-400" />
+              <Tv className="w-5 h-5 text-lime-400" />
             )}
           </div>
           <div>
@@ -1255,10 +1255,10 @@ export default function LivePlayer({
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span>Streaming: <span className="font-mono text-[11px] text-orange-400 font-medium">{channel.originalGroup}</span></span>
+              <span>Streaming: <span className="font-mono text-[11px] text-lime-400 font-medium">{channel.originalGroup}</span></span>
               <span className="text-slate-600 hidden sm:inline">•</span>
               <span className="flex items-center gap-1 text-slate-300">
-                <Zap className="w-3 h-3 text-orange-500 fill-current" />
+                <Zap className="w-3 h-3 text-lime-500 fill-current" />
                 Live Broadcast Link
               </span>
             </p>

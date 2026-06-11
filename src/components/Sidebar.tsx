@@ -101,7 +101,7 @@ export default function Sidebar({
 
   const navItems = [
     { id: "all", name: "All Channels", icon: Tv },
-    { id: "featured", name: "Featured Channels", icon: Sparkles, color: "text-amber-400" },
+    { id: "featured", name: "Featured Channels", icon: Sparkles, color: "text-lime-400" },
     { id: "favorites", name: "My Favorites", icon: Heart, color: "text-rose-500" },
     { id: "history", name: "Watch History", icon: History, color: "text-blue-400" },
   ];
@@ -126,15 +126,15 @@ export default function Sidebar({
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-zinc-950/60 backdrop-blur-2xl border-r border-white/5 text-slate-100 font-sans shadow-2xl relative overflow-hidden" id="iptv-sidebar">
       {/* Top ambient luxury background aura */}
-      <div className="absolute top-0 left-0 w-32 h-32 bg-orange-500/5 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute top-0 left-0 w-32 h-32 bg-lime-500/5 blur-3xl pointer-events-none rounded-full" />
       {/* Sidebar Header */}
       <div className="flex items-center justify-between px-6 py-7 border-b border-white/10" id="sidebar-header">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-orange-950/40 font-display">
+          <div className="w-9 h-9 bg-lime-500 rounded-lg flex items-center justify-center font-bold text-lg text-zinc-950 shadow-lg shadow-lime-950/40 font-display">
             M
           </div>
           <div>
-            <h1 className="text-lg font-bold font-display tracking-tight text-white leading-none">Madrid<span className="text-orange-500">tvlive</span></h1>
+            <h1 className="text-lg font-bold font-display tracking-tight text-white leading-none">Madrid<span className="text-lime-400">tvlive</span></h1>
             <span className="text-[10px] text-slate-400 font-mono">Live Streams Player</span>
           </div>
         </div>
@@ -163,16 +163,16 @@ export default function Sidebar({
                     onClick={() => handleCategorySelect(item.id)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-sm cursor-pointer ${
                       isActive 
-                        ? 'bg-white/10 text-orange-400 font-bold border border-orange-500/25 shadow-md glow-orange/10' 
+                        ? 'bg-white/10 text-lime-400 font-bold border border-lime-500/25 shadow-md glow-lemon/10' 
                         : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-orange-400' : 'text-slate-400 group-hover:text-white'}`} />
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-lime-400' : 'text-slate-400 group-hover:text-white'}`} />
                       <span>{item.name}</span>
                     </div>
                     <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg border transition-all ${
-                      isActive ? 'bg-orange-500/30 border-orange-500/40 text-orange-300 font-black' : 'bg-white/5 border-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-gray-300'
+                      isActive ? 'bg-lime-500/30 border-lime-500/40 text-lime-350 text-lime-300 font-black' : 'bg-white/5 border-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-gray-300'
                     }`}>
                       {count}
                     </span>
@@ -199,16 +199,16 @@ export default function Sidebar({
                     onClick={() => handleCategorySelect(cat.id)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-sm cursor-pointer ${
                       isActive 
-                        ? 'bg-white/10 text-orange-400 font-bold border border-orange-500/25 shadow-md glow-orange/10' 
+                        ? 'bg-white/10 text-lime-400 font-bold border border-lime-500/25 shadow-md glow-lemon/10' 
                         : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-orange-400' : 'text-slate-400 group-hover:text-white'}`} />
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-lime-400' : 'text-slate-400 group-hover:text-white'}`} />
                       <span>{cat.name}</span>
                     </div>
                     <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg border transition-all ${
-                      isActive ? 'bg-orange-500/30 border-orange-500/40 text-orange-300 font-black' : 'bg-white/5 border-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-gray-300'
+                      isActive ? 'bg-lime-500/30 border-lime-500/40 text-lime-350 text-lime-300 font-black' : 'bg-white/5 border-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-gray-300'
                     }`}>
                       {count}
                     </span>
@@ -221,15 +221,15 @@ export default function Sidebar({
       </div>
 
       {/* Premium Lifetime Feature Panel */}
-      <div className="p-4 mx-3 mb-2 bg-gradient-to-br from-orange-500/10 via-orange-950/20 to-black/40 border border-orange-500/25 rounded-2xl shadow-xl glow-orange/15 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/10 blur-2xl pointer-events-none rounded-full" />
-        <p className="text-[9px] text-orange-400 font-bold uppercase tracking-widest mb-1 font-mono">Active Privilege</p>
+      <div className="p-4 mx-3 mb-2 bg-gradient-to-br from-lime-500/10 via-lime-950/20 to-black/40 border border-lime-500/25 rounded-2xl shadow-xl glow-lemon/15 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-16 h-16 bg-lime-500/10 blur-2xl pointer-events-none rounded-full" />
+        <p className="text-[9px] text-lime-400 font-bold uppercase tracking-widest mb-1 font-mono">Active Privilege</p>
         <p className="text-xs font-bold text-white font-sans flex items-center gap-1.5 uppercase tracking-wide">
-          <Sparkles className="w-3.5 h-3.5 text-orange-500 fill-current animate-pulse" />
+          <Sparkles className="w-3.5 h-3.5 text-lime-400 fill-current animate-pulse" />
           <span>Premium Lifetime Access</span>
         </p>
         <div className="mt-3 h-1 w-full bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full w-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full animate-pulse"></div>
+          <div className="h-full w-full bg-gradient-to-r from-lime-600 to-lime-400 rounded-full animate-pulse"></div>
         </div>
       </div>
 
@@ -241,7 +241,7 @@ export default function Sidebar({
             href="https://www.facebook.com/mdrayhanOfficial/" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="text-orange-400 hover:text-orange-300 hover:underline font-sans font-medium"
+            className="text-lime-400 hover:text-lime-300 hover:underline font-sans font-medium"
           >
             Rayhan Official
           </a>

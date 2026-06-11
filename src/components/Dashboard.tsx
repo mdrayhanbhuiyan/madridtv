@@ -105,15 +105,15 @@ export default function Dashboard({
       
       {/* Search Header panel bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-black/40 p-5 rounded-2xl border border-white/5 backdrop-blur-2xl shadow-xl shadow-black/60 glow-hover-premium relative overflow-hidden" id="dashboard-search-bar-header">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-2xl pointer-events-none rounded-full" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-lime-500/5 blur-2xl pointer-events-none rounded-full" />
         <div className="relative flex-1" id="search-input-group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-orange-400/80" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-lime-400/80" />
           <input
             type="text"
             placeholder={`Search from ${channels.length} channels... (e.g., "Somoy News", "Sports", "Bangla")`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-zinc-950/60 border border-white/5 focus:border-orange-500/60 rounded-xl pl-12 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/40 transition-all font-sans"
+            className="w-full bg-zinc-950/60 border border-white/5 focus:border-lime-500/60 rounded-xl pl-12 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-lime-500/40 transition-all font-sans"
             id="search-input-field"
           />
         </div>
@@ -125,11 +125,11 @@ export default function Dashboard({
               onClick={() => setShowOnlyFeatured(!showOnlyFeatured)}
               className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-all duration-200 uppercase tracking-wide ${
                 showOnlyFeatured 
-                  ? "bg-orange-500/25 border-orange-500/50 text-orange-300 font-bold glow-orange/30" 
+                  ? "bg-lime-500/25 border-lime-500/50 text-lime-300 font-bold glow-lemon/30" 
                   : "bg-black/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              <Star className={`w-3.5 h-3.5 text-orange-400 ${showOnlyFeatured ? "fill-current" : ""}`} />
+              <Star className={`w-3.5 h-3.5 text-lime-400 ${showOnlyFeatured ? "fill-current" : ""}`} />
               <span>Only Featured</span>
             </button>
           )}
@@ -144,7 +144,7 @@ export default function Dashboard({
             title="Refresh stream list from GitHub"
             id="force-refresh-btn"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-orange-500 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-lime-500 ${isRefreshing ? "animate-spin" : ""}`} />
             <span>Update List</span>
           </button>
         </div>
@@ -153,7 +153,7 @@ export default function Dashboard({
       {/* Hero Welcome Banner Spotlight - only visible if NO channel is selected and we are on standard categories */}
       {!selectedChannel && spotlightChannel && currentCategory === "all" && !searchQuery && (
         <div 
-          className="relative rounded-3xl overflow-hidden bg-black/98 border border-orange-500/20 min-h-[360px] p-6 md:p-10 flex flex-col justify-end shadow-2xl shadow-orange-950/10 group glow-orange/20"
+          className="relative rounded-3xl overflow-hidden bg-black/98 border border-lime-500/20 min-h-[360px] p-6 md:p-10 flex flex-col justify-end shadow-2xl shadow-lime-950/10 group glow-lemon/20"
           id="spotlight-promotional-banner"
         >
           {/* Background image & Ambient Gradients */}
@@ -162,8 +162,8 @@ export default function Dashboard({
           
           <div className="relative z-20 flex flex-col md:flex-row items-center gap-6 md:gap-10">
             {/* Visual poster card */}
-            <div className="w-28 h-28 md:w-36 md:h-36 bg-black/80 p-3 border border-orange-500/20 rounded-2xl shrink-0 flex items-center justify-center glow-orange/15 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent blur-xl pointer-events-none" />
+            <div className="w-28 h-28 md:w-36 md:h-36 bg-black/80 p-3 border border-lime-500/20 rounded-2xl shrink-0 flex items-center justify-center glow-lemon/15 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-lime-500/5 to-transparent blur-xl pointer-events-none" />
               {spotlightChannel.logo ? (
                 <img 
                   src={spotlightChannel.logo} 
@@ -175,7 +175,7 @@ export default function Dashboard({
                   }}
                 />
               ) : (
-                <Tv className="w-10 h-10 text-orange-500 animate-pulse relative z-10" />
+                <Tv className="w-10 h-10 text-lime-400 animate-pulse relative z-10" />
               )}
             </div>
 
@@ -183,26 +183,26 @@ export default function Dashboard({
             <div className="flex-1 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
                 <span className="px-2 py-0.5 bg-red-650 text-[10px] font-black rounded tracking-widest uppercase text-white bg-red-600 font-mono shadow">Live</span>
-                <span className="text-[11px] font-mono tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-0.5 rounded-full uppercase font-bold">
+                <span className="text-[11px] font-mono tracking-wider text-lime-400 bg-lime-500/10 border border-lime-500/30 px-2.5 py-0.5 rounded-full uppercase font-bold">
                   Featured Broadcast
                 </span>
               </div>
               
-              <h1 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight premium-text-gradient-orange pb-1">
+              <h1 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight premium-text-gradient-lemon pb-1">
                 {spotlightChannel.name}
               </h1>
               
               <p className="text-xs md:text-sm text-slate-300 mt-2 max-w-xl font-sans leading-relaxed">
-                Tune in to this highly-rated live broadcast stream. Sourced from group <span className="text-orange-400 font-mono font-medium">{spotlightChannel.originalGroup}</span>. Play live streams instantly inside our optimized video player.
+                Tune in to this highly-rated live broadcast stream. Sourced from group <span className="text-lime-400 font-mono font-medium">{spotlightChannel.originalGroup}</span>. Play live streams instantly inside our optimized video player.
               </p>
               
               <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
                 <button
                   onClick={() => onSelectChannel(spotlightChannel)}
-                  className="px-8 py-3.5 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-extrabold rounded-xl flex items-center gap-3 hover:scale-105 transition-all text-xs select-none shadow-lg shadow-orange-600/20 border border-orange-400/20 cursor-pointer"
+                  className="px-8 py-3.5 bg-gradient-to-r from-lime-600 to-lime-500 hover:from-lime-500 hover:to-lime-400 text-zinc-950 font-extrabold rounded-xl flex items-center gap-3 hover:scale-105 transition-all text-xs select-none shadow-lg shadow-lime-600/25 border border-lime-400/20 cursor-pointer"
                   id="spotlight-watch-now-btn"
                 >
-                  <Play className="w-3.5 h-3.5 fill-current text-white" />
+                  <Play className="w-3.5 h-3.5 fill-current text-zinc-950" />
                   Stream Now
                 </button>
                 <button
@@ -226,7 +226,7 @@ export default function Dashboard({
       {!selectedChannel && recentChannels.length > 0 && currentCategory === "all" && !searchQuery && (
         <div id="recently-played-shelf" className="space-y-3">
           <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-orange-500 animate-pulse" />
+            <History className="w-4 h-4 text-lime-500 animate-pulse" />
             <span className="text-xs font-bold tracking-wider text-slate-400 uppercase font-mono">Resume Watching</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -242,7 +242,7 @@ export default function Dashboard({
                       src={rc.logo} 
                       alt=""
                       referrerPolicy="no-referrer"
-                      className="max-w-full max-h-full object-contain rounded-md"
+                      className="max-w-[85%] max-h-[85%] object-contain rounded-md"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";
                       }}
@@ -252,7 +252,7 @@ export default function Dashboard({
                   )}
                 </div>
                 <div className="truncate">
-                  <div className="text-xs font-semibold text-slate-200 group-hover:text-orange-400 transition-colors truncate">
+                  <div className="text-xs font-semibold text-slate-200 group-hover:text-lime-400 transition-colors truncate">
                     {rc.name}
                   </div>
                   <span className="text-[9px] text-slate-400 truncate block font-mono uppercase bg-white/5 px-1 py-0.2 rounded mt-0.5 text-center">
@@ -269,7 +269,7 @@ export default function Dashboard({
       <div className="space-y-4" id="channels-main-grid-area">
         <div className="flex items-center justify-between border-b border-white/10 pb-3" id="grid-header">
           <div className="flex items-center gap-2.5">
-            <Grid className="w-4.5 h-4.5 text-orange-500" />
+            <Grid className="w-4.5 h-4.5 text-lime-500" />
             <h2 className="text-sm font-bold tracking-wider text-slate-400 uppercase font-mono">
               {currentCategory === "all" ? "Channel Directory" : `${currentCategory} Selection`}
             </h2>

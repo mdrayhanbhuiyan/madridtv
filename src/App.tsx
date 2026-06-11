@@ -166,8 +166,8 @@ export default function App() {
       
       {/* Atmosphere Ambient Gradients */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" id="ambient-immersive-backdrop">
-        <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-orange-950/20 rounded-full blur-[110px] -mr-36 -mt-36" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-950/10 rounded-full blur-[100px] -ml-20 -mb-20" />
+        <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-lime-950/15 rounded-full blur-[110px] -mr-36 -mt-36" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-950/10 rounded-full blur-[100px] -ml-20 -mb-20" />
       </div>
 
       {/* Sidebar Component */}
@@ -199,11 +199,11 @@ export default function App() {
               
               {/* App Identity */}
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-orange-600 rounded flex items-center justify-center font-bold text-xs text-white shadow-md shadow-orange-950/40 font-display">
+                <div className="w-7 h-7 bg-lime-500 rounded flex items-center justify-center font-bold text-xs text-zinc-950 shadow-md shadow-lime-950/40 font-display">
                   M
                 </div>
                 <span className="font-bold text-sm md:text-base tracking-tight font-display text-white">
-                  Madrid<span className="text-orange-500">tvlive</span>
+                  Madrid<span className="text-lime-400">tvlive</span>
                 </span>
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function App() {
                 placeholder="Search channels..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-black/50 border border-white/10 focus:border-orange-500/80 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50 transition-all font-sans"
+                className="w-full bg-black/50 border border-white/10 focus:border-lime-500/80 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-lime-500/50 transition-all font-sans"
                 id="global-search-input"
               />
               {searchQuery && (
@@ -234,8 +234,8 @@ export default function App() {
 
           {/* Subtle Now Playing Scrolling Ticker */}
           <div className="bg-zinc-950/90 border-b border-white/5 py-2.5 px-4 md:px-8 flex items-center gap-3 overflow-hidden text-xs shrink-0 select-none z-15" id="now-playing-sub-ticker">
-            <div className="flex items-center gap-1.5 shrink-0 bg-orange-500/15 border border-orange-500/30 text-orange-400 font-mono text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 live-pulse" />
+            <div className="flex items-center gap-1.5 shrink-0 bg-lime-500/15 border border-lime-500/30 text-lime-400 font-mono text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-lime-500 live-pulse" />
               Now Playing
             </div>
             
@@ -245,19 +245,19 @@ export default function App() {
                   <>
                     <span className="inline-flex items-center gap-1">
                       Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
-                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-orange-400 font-extrabold uppercase text-[9.5px] px-1 bg-orange-500/10 border border-orange-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
                       <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
                       <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
                     </span>
                     <span className="inline-flex items-center gap-1">
                       Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
-                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-orange-400 font-extrabold uppercase text-[9.5px] px-1 bg-orange-500/10 border border-orange-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
                       <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
                       <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
                     </span>
                     <span className="inline-flex items-center gap-1">
                       Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
-                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-orange-400 font-extrabold uppercase text-[9.5px] px-1 bg-orange-500/10 border border-orange-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
                       <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
                       <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
                     </span>
@@ -312,11 +312,11 @@ export default function App() {
                   <div className="p-4 md:p-8 shrink-0 max-w-5xl mx-auto w-full" id="player-view-wrapper">
                     {isMiniPlayerActive ? (
                       <div className="bg-gradient-to-br from-zinc-900/60 to-black/40 border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden" id="pip-active-placeholder">
-                        {/* Soft ambient orange theme highlight */}
-                        <div className="absolute top-0 right-0 w-[40%] h-[150%] bg-orange-500/5 blur-3xl -mr-10 -mt-10 rounded-full z-0 pointer-events-none" />
+                        {/* Soft ambient lemon theme highlight */}
+                        <div className="absolute top-0 right-0 w-[40%] h-[150%] bg-lime-500/5 blur-3xl -mr-10 -mt-10 rounded-full z-0 pointer-events-none" />
                         
                         <div className="flex items-center gap-4 relative z-10" id="pip-placeholder-meta">
-                          <div className="w-12 h-12 bg-orange-500/10 rounded-2xl border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
+                           <div className="w-12 h-12 bg-lime-500/10 rounded-2xl border border-lime-500/20 flex items-center justify-center text-lime-400 shrink-0">
                             <Tv className="w-6 h-6 animate-pulse" />
                           </div>
                           <div>
@@ -329,7 +329,7 @@ export default function App() {
 
                         <button
                           onClick={() => setIsMiniPlayerActive(false)}
-                          className="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-xl text-xs hover:scale-102 hover:shadow-orange-500/15 transition-all shadow-lg shadow-orange-950/20 relative z-10 shrink-0"
+                          className="px-5 py-2.5 bg-lime-550 bg-lime-600 hover:bg-lime-500 text-zinc-950 font-extrabold rounded-xl text-xs hover:scale-102 hover:shadow-lime-500/15 transition-all shadow-lg shadow-lime-950/20 relative z-10 shrink-0"
                           id="pip-restore-btn"
                         >
                           Restore Player Inline
