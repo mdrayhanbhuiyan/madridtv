@@ -14,6 +14,7 @@ import { Channel } from "./types";
 import Sidebar from "./components/Sidebar";
 import LivePlayer from "./components/LivePlayer";
 import Dashboard from "./components/Dashboard";
+import { fetchChannelsClientSide } from "./utils/playlistClient";
 
 export default function App() {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -28,32 +29,44 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMiniPlayerActive, setIsMiniPlayerActive] = useState(false);
 
-  // 1. Fetch channels from server-side api
+  // 1. Fetch channels from server-side api with modern client-side fallback support for static hosting (Vercel)
   const fetchChannels = async (forceRefresh = false) => {
     try {
       if (forceRefresh) {
         setIsRefreshing(true);
         // Flush memory cache on back-end
-        const resp = await fetch("/api/channels/refresh", { method: "POST" });
-        if (!resp.ok) throw new Error("Server failed to refresh source links.");
+        try {
+          const resp = await fetch("/api/channels/refresh", { method: "POST" });
+          if (!resp.ok) throw new Error("Server failed to refresh source links.");
+        } catch (err) {
+          console.warn("Backend refresh endpoint is unavailable, performing direct client-side fetch instead.");
+          const clientChannels = await fetchChannelsClientSide();
+          setChannels(clientChannels);
+          return;
+        }
       } else {
         setIsFetching(true);
       }
       setErrorMessage("");
 
-      const resp = await fetch("/api/channels");
-      if (!resp.ok) {
-        throw new Error(`Platform failed to fetch playlists: status ${resp.status}`);
-      }
-      
-      const resData = await resp.json();
-      if (resData && resData.channels && Array.isArray(resData.channels)) {
-        setChannels(resData.channels);
-      } else {
-        throw new Error("Invalid playlist channels payload format.");
+      try {
+        const resp = await fetch("/api/channels");
+        if (resp.ok) {
+          const resData = await resp.json();
+          if (resData && resData.channels && Array.isArray(resData.channels)) {
+            setChannels(resData.channels);
+            return;
+          }
+        }
+        throw new Error(`Platform failed to fetch playlists: status ${resp?.status || "Unknown"}`);
+      } catch (srvError) {
+        console.warn("Express backend API /api/channels is unavailable or returned error. Falling back to direct client-side extraction.", srvError);
+        // Direct browser fallback to raw channels to ensure continuous play in Vercel, Netlify, or static server setups
+        const clientChannels = await fetchChannelsClientSide();
+        setChannels(clientChannels);
       }
     } catch (e: any) {
-      console.error(e);
+      console.error("Critical: Both server-side API and client-side playlist extraction failed:", e);
       setErrorMessage(e.message || "Failed to establish connections with stream provider.");
     } finally {
       setIsFetching(false);
