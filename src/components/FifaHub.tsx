@@ -335,7 +335,7 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
     return () => {
       isMounted = false;
     };
-  }, [onShowNotification]);
+  }, []);
 
   // Dynamic lists of random incidents to generate live ticker events
   const MEX_PLAYERS_OUT = ["Herrera", "Sanchez", "Chicharito II", "Montes", "Gallardo", "Alvarez"];

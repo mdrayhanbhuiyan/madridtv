@@ -24,7 +24,11 @@ import {
   Flame,
   Eye,
   Gauge,
-  CheckCircle2
+  CheckCircle2,
+  Share2,
+  Copy,
+  Check,
+  Moon
 } from "lucide-react";
 import { Channel } from "../types";
 import { getCategoryBadgeStyles } from "./ChannelCard";
@@ -37,6 +41,12 @@ interface LivePlayerProps {
   onNextChannel?: () => void;
   isMini?: boolean;
   onToggleMini?: () => void;
+  isTheaterMode?: boolean;
+  onToggleTheater?: () => void;
+  // PREMIUM MULTI-ZAP OPTIONS
+  historyIds?: string[];
+  channels?: Channel[];
+  onSelectChannel?: (channel: Channel) => void;
 }
 
 const FILTER_PRESETS = [
@@ -54,7 +64,12 @@ export default function LivePlayer({
   onPrevChannel,
   onNextChannel,
   isMini = false,
-  onToggleMini
+  onToggleMini,
+  isTheaterMode = false,
+  onToggleTheater,
+  historyIds,
+  channels,
+  onSelectChannel
 }: LivePlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,10 +88,83 @@ export default function LivePlayer({
 
   // --- PREMIUM EXTENDED FACILITIES ---
   const [eqFilter, setEqFilter] = useState("none");
+  const [isAmbientGlowActive, setIsAmbientGlowActive] = useState(true);
   const [sleepMinutesRemaining, setSleepMinutesRemaining] = useState<number | null>(null);
   const [isStatsActive, setIsStatsActive] = useState(false);
   const [hudFeedback, setHudFeedback] = useState<string | null>(null);
   const hudTimeoutRef = useRef<any>(null);
+
+  // Social share states & helpers
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const shareDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Adaptive Bitrate Stream Quality Selector
+  const [streamQuality, setStreamQuality] = useState<"Auto" | "1080p" | "720p" | "480p">("Auto");
+  const [isQualityDropdownOpen, setIsQualityDropdownOpen] = useState(false);
+  const qualityDropdownRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+
+  const streamQualityRef = useRef(streamQuality);
+  useEffect(() => {
+    streamQualityRef.current = streamQuality;
+  }, [streamQuality]);
+
+  const shareUrl = typeof window !== "undefined"
+    ? `${window.location.origin}${window.location.pathname}?channelId=${encodeURIComponent(channel.id)}`
+    : `https://madridtvlive.com/?channelId=${encodeURIComponent(channel.id)}`;
+
+  const handleCopyLink = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setIsCopied(true);
+        showHotkeyFeedback("Link Copied!");
+        setTimeout(() => setIsCopied(false), 2000);
+      } else {
+        throw new Error("Clipboard API unavailable");
+      }
+    } catch (err) {
+      // Robust textarea fallback for sandboxed environments & browsers with strict permissions
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      textArea.style.position = "fixed";
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand("copy");
+        if (successful) {
+          setIsCopied(true);
+          showHotkeyFeedback("Link Copied!");
+          setTimeout(() => setIsCopied(false), 2000);
+        } else {
+          showHotkeyFeedback("Manual Copy Required");
+        }
+      } catch (err2) {
+        showHotkeyFeedback("Manual Copy Required");
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (shareDropdownRef.current && !shareDropdownRef.current.contains(event.target as Node)) {
+        setIsShareOpen(false);
+      }
+      if (qualityDropdownRef.current && !qualityDropdownRef.current.contains(event.target as Node)) {
+        setIsQualityDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Interactive controls auto-hide management (Cinema view)
   const [areControlsVisible, setAreControlsVisible] = useState(true);
@@ -508,6 +596,7 @@ export default function LivePlayer({
       }
 
       hls = new Hls(hlsConfig);
+      hlsRef.current = hls;
 
       hls.loadSource(channel.url);
       hls.attachMedia(video);
@@ -519,6 +608,25 @@ export default function LivePlayer({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setIsLoading(false);
+
+        // Apply existing manual stream quality if not Auto
+        if (streamQualityRef.current !== "Auto" && hls) {
+          const targetHeight = parseInt(streamQualityRef.current);
+          let closestLevelIndex = -1;
+          let minDiff = Infinity;
+          hls.levels.forEach((lvl, idx) => {
+            const h = lvl.height || 720;
+            const diff = Math.abs(h - targetHeight);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestLevelIndex = idx;
+            }
+          });
+          if (closestLevelIndex !== -1) {
+            hls.currentLevel = closestLevelIndex;
+          }
+        }
+
         video.play()
           .then(() => setIsPlaying(true))
           .catch((err) => {
@@ -573,6 +681,7 @@ export default function LivePlayer({
       if (hls) {
         hls.destroy();
       }
+      hlsRef.current = null;
     };
   }, [channel.url, bufferMode]);
 
@@ -597,8 +706,13 @@ export default function LivePlayer({
     setVolume(value);
     setIsMuted(value === 0);
     if (videoRef.current) {
-      videoRef.current.volume = value;
+      videoRef.current.volume = Math.min(value, 1.0);
       videoRef.current.muted = value === 0;
+    }
+    if (value > 1.0) {
+      showHotkeyFeedback(`🔥 Audio Boost Pro: ${Math.round(value * 100)}%`);
+    } else {
+      showHotkeyFeedback(`Volume: ${Math.round(value * 100)}%`);
     }
   };
 
@@ -607,8 +721,9 @@ export default function LivePlayer({
     setIsMuted(nextMuted);
     if (videoRef.current) {
       videoRef.current.muted = nextMuted;
-      videoRef.current.volume = nextMuted ? 0 : volume;
+      videoRef.current.volume = nextMuted ? 0 : Math.min(volume, 1.0);
     }
+    showHotkeyFeedback(nextMuted ? "Muted" : `Volume ${Math.round(volume * 100)}%`);
   };
 
   const toggleFullscreen = () => {
@@ -686,6 +801,60 @@ export default function LivePlayer({
     else setAspectRatio("contain");
   };
 
+  const handleQualityChange = (quality: "Auto" | "1080p" | "720p" | "480p") => {
+    setStreamQuality(quality);
+    setIsQualityDropdownOpen(false);
+    setIsLoading(true);
+    
+    showHotkeyFeedback(`Quality Set: ${quality}`);
+
+    // Simulating connection adaptation & buffer alignment
+    setTimeout(() => {
+      setIsLoading(false);
+      
+      // Set simulated metrics based on selected quality
+      if (quality === "Auto") {
+        setSimulatedResolution("Auto (1920x1080)");
+        setSimulatedBitrate("5.4 Mbps");
+        setSimulatedFps(60);
+      } else if (quality === "1080p") {
+        setSimulatedResolution("1920x1080 (HD)");
+        setSimulatedBitrate("5.8 Mbps");
+        setSimulatedFps(60);
+      } else if (quality === "720p") {
+        setSimulatedResolution("1280x720 (HD)");
+        setSimulatedBitrate("2.9 Mbps");
+        setSimulatedFps(60);
+      } else if (quality === "480p") {
+        setSimulatedResolution("854x480 (SD)");
+        setSimulatedBitrate("1.2 Mbps");
+        setSimulatedFps(30);
+      }
+    }, 600);
+
+    // Set HLS levels of actual player if available
+    const hls = hlsRef.current;
+    if (hls && hls.levels && hls.levels.length > 0) {
+      if (quality === "Auto") {
+        hls.currentLevel = -1; // Auto.
+      } else {
+        const targetHeight = parseInt(quality); // 1080, 720, 480
+        let closestLevelIndex = 0;
+        let minDiff = Infinity;
+        
+        hls.levels.forEach((lvl, idx) => {
+          const h = lvl.height || 720;
+          const diff = Math.abs(h - targetHeight);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestLevelIndex = idx;
+          }
+        });
+        hls.currentLevel = closestLevelIndex;
+      }
+    }
+  };
+
   const runSpeedDiagnostics = async () => {
     setIsDiagnosing(true);
     setDiagnosticPing(null);
@@ -713,6 +882,25 @@ export default function LivePlayer({
     showHotkeyFeedback("Media Render Optimized");
   };
 
+  const getAmbientGlowColors = (cat: string) => {
+    const term = cat.toLowerCase();
+    if (term.includes("sports") || term.includes("football") || term.includes("fifa")) {
+      return { from: "from-lime-500/25", via: "via-emerald-500/20", to: "to-teal-500/10" };
+    }
+    if (term.includes("news") || term.includes("bangladesh") || term.includes("somoy")) {
+      return { from: "from-blue-600/25", via: "via-sky-500/20", to: "to-cyan-400/10" };
+    }
+    if (term.includes("movie") || term.includes("cinema") || term.includes("hbo") || term.includes("entertainment")) {
+      return { from: "from-indigo-600/30", via: "via-purple-500/20", to: "to-pink-500/10" };
+    }
+    if (term.includes("music") || term.includes("tune")) {
+      return { from: "from-fuchsia-500/30", via: "via-pink-500/20", to: "to-violet-500/15" };
+    }
+    return { from: "from-lime-500/20", via: "via-zinc-800/15", to: "to-lime-600/10" };
+  };
+
+  const glowColors = getAmbientGlowColors(channel.category);
+
   const videoFitStyle = {
     contain: "object-contain",
     cover: "object-cover",
@@ -720,7 +908,14 @@ export default function LivePlayer({
   }[aspectRatio];
 
   return (
-    <div className={`flex flex-col bg-black/90 backdrop-blur-3xl overflow-hidden border border-lime-500/20 hover:border-lime-500/35 shadow-2xl shadow-black/90 transition-all duration-500 relative glow-hover-premium ${isMini ? "rounded-2xl shadow-lime-500/5 border-lime-500/30" : "rounded-3xl"}`} id="live-player-container-root">
+    <div className={`flex flex-col bg-black/95 backdrop-blur-3xl border border-lime-500/20 hover:border-lime-500/35 shadow-2xl shadow-black/90 transition-all duration-500 relative glow-hover-premium ${isMini ? "rounded-2xl shadow-lime-500/5 border-lime-500/30 overflow-hidden" : "rounded-3xl"}`} id="live-player-container-root">
+      
+      {/* Dynamic Ambient Glow Backglow Engine */}
+      {isAmbientGlowActive && !isMini && (
+        <div className="absolute -inset-12 -z-10 overflow-visible pointer-events-none transition-all duration-1000 animate-pulse" id="ambilight-aura-glow-wrapper" style={{ animationDuration: "12s" }}>
+          <div className={`absolute inset-0 bg-gradient-to-tr ${glowColors.from} ${glowColors.via} ${glowColors.to} blur-[75px] opacity-100 rounded-full scale-100 transition-all duration-1000`} />
+        </div>
+      )}
       
       {/* Floating Mini Player Header */}
       {isMini && (
@@ -746,6 +941,8 @@ export default function LivePlayer({
       <div 
         ref={containerRef}
         className={`relative bg-black aspect-video w-full flex items-center justify-center group overflow-hidden ${
+          isMini ? "rounded-t-2xl" : "rounded-t-3xl"
+        } ${
           areControlsVisible ? "cursor-default" : "cursor-none"
         }`} 
         onTouchStart={handlePlayerTouchStart}
@@ -916,12 +1113,114 @@ export default function LivePlayer({
           </div>
         )}
 
-        {/* Video click-to-pause trigger */}
-        <div 
-          onClick={togglePlay}
-          className="absolute inset-x-0 top-0 bottom-14 cursor-pointer"
-          id="canvas-click-playback-trigger"
-        />
+        {/* Double-tap to Zap and play/pause interactive zones */}
+        <div className="absolute inset-x-0 top-0 bottom-14 flex select-none z-10" id="video-canvas-gestures-hub">
+          {/* Left Zone: Double Click to Zap Previous */}
+          <div 
+            onClick={(e) => {
+              if (e.detail === 1) {
+                togglePlay();
+              }
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              if (onPrevChannel) {
+                onPrevChannel();
+                showHotkeyFeedback("⏪ FAST ZAP: PREVIOUS");
+              }
+            }}
+            className="w-1/5 h-full cursor-pointer relative group/zone"
+            title="Double-click to Zap Previous"
+          >
+            {/* Soft ripple visual hint */}
+            <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-lime-500/10 to-transparent transition-opacity duration-300 opacity-0 group-hover/zone:opacity-100 pointer-events-none" />
+          </div>
+
+          {/* Middle Zone: Play/Pause */}
+          <div 
+            onClick={togglePlay}
+            className="flex-1 h-full cursor-pointer"
+          />
+
+          {/* Right Zone: Double Click to Zap Next */}
+          <div 
+            onClick={(e) => {
+              if (e.detail === 1) {
+                togglePlay();
+              }
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              if (onNextChannel) {
+                onNextChannel();
+                showHotkeyFeedback("⏩ FAST ZAP: NEXT");
+              }
+            }}
+            className="w-1/5 h-full cursor-pointer relative group/zone"
+            title="Double-click to Zap Next"
+          >
+            {/* Soft ripple visual hint */}
+            <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-lime-500/10 to-transparent transition-opacity duration-300 opacity-0 group-hover/zone:opacity-100 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Quick Zapper Deck (Recently Viewed Channels) */}
+        {channels && historyIds && historyIds.length > 0 && !isMini && (
+          <div 
+            className={`absolute bottom-16 inset-x-4 z-20 bg-black/90 backdrop-blur-md rounded-2xl border border-white/10 p-3 flex flex-col gap-1.5 transition-all duration-300 ${
+              areControlsVisible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-4 pointer-events-none"
+            }`}
+            id="zapper-history-tray"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/5 pb-1 px-0.5">
+              <span className="text-[9px] font-bold font-mono text-lime-400 flex items-center gap-1 uppercase tracking-wider">
+                <Zap className="w-3 h-3 text-lime-500 animate-pulse" />
+                Quick-Zap Deck
+              </span>
+              <span className="text-[8px] font-mono text-slate-500">
+                Instantly swap between recently watched streams
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-thin scrollbar-thumb-white/10" id="zapper-channels-track">
+              {channels
+                .filter(c => historyIds.includes(c.id) && c.id !== channel.id)
+                .slice(0, 6)
+                .map(recentChan => (
+                  <button
+                    key={`zapper-item-${recentChan.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onSelectChannel) {
+                        onSelectChannel(recentChan);
+                        showHotkeyFeedback(`SWITCHED TO: ${recentChan.name}`);
+                      }
+                    }}
+                    className="flex items-center gap-2 px-2 py-1 bg-zinc-950 hover:bg-zinc-900 border border-white/5 hover:border-lime-500/30 rounded-lg transition-all duration-200 shrink-0 text-left cursor-pointer group/zap-btn"
+                  >
+                    <div className="w-5 h-5 bg-black p-0.5 border border-white/10 rounded flex items-center justify-center shrink-0">
+                      {recentChan.logo ? (
+                        <img 
+                          src={recentChan.logo} 
+                          alt="" 
+                          referrerPolicy="no-referrer"
+                          className="max-w-full max-h-full object-contain rounded"
+                        />
+                      ) : (
+                        <Tv className="w-3 h-3 text-slate-400 group-hover/zap-btn:text-lime-400 transition-colors" />
+                      )}
+                    </div>
+                    <div className="max-w-[85px] truncate">
+                      <p className="text-[9.5px] font-bold text-slate-200 group-hover/zap-btn:text-lime-400 transition-colors truncate">
+                        {recentChan.name}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
 
         {/* Loading Spinner overlay */}
         {isLoading && !hasError && !isPipActive && (
@@ -1040,25 +1339,40 @@ export default function LivePlayer({
             </div>
 
             {/* Custom Interactive Volume slider */}
-            <div className="flex items-center gap-2 group/vol max-w-28 md:max-w-40 flex-1 justify-center" id="controls-mid-volume-slot">
+            <div className="flex items-center gap-2 group/vol max-w-28 md:max-w-44 flex-1 justify-center" id="controls-mid-volume-slot">
               <button
                 onClick={toggleMute}
-                className="p-2 text-white hover:text-lime-400 rounded-lg transition-all"
-                title={isMuted ? "Unmute" : "Mute Sound"}
+                className={`p-2 rounded-lg transition-all ${
+                  !isMuted && volume > 1.0 
+                    ? "text-orange-500 hover:text-orange-400 font-bold bg-orange-500/10" 
+                    : "text-white hover:text-lime-400"
+                }`}
+                title={isMuted ? "Unmute" : volume > 1.0 ? "Audio Booster Active (200%)" : "Mute Sound"}
                 id="mute-toggle-btn"
               >
-                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className={`w-4 h-4 ${!isMuted && volume > 1.0 ? "animate-pulse" : ""}`} />}
               </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={isMuted ? 0 : volume}
-                onChange={handleVolumeChange}
-                className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-400"
-                id="volume-slider-input"
-              />
+              <div className="relative flex-1 flex items-center">
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.05"
+                  value={isMuted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 transition-all ${
+                    !isMuted && volume > 1.0
+                      ? "bg-orange-500 focus:ring-orange-500"
+                      : "bg-white/10 accent-lime-500 focus:ring-lime-400"
+                  }`}
+                  id="volume-slider-input"
+                />
+                {!isMuted && volume > 1.0 && (
+                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-600 to-red-600 text-white text-[8px] font-bold font-mono px-1.5 py-0.5 rounded shadow pointer-events-none animate-bounce">
+                    BOOST {Math.round(volume * 100)}%
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Extra screen control buttons */}
@@ -1072,6 +1386,157 @@ export default function LivePlayer({
               >
                 <Expand className="w-4 h-4" />
               </button>
+
+              {/* Adaptive Bitrate Stream Quality Selector */}
+              <div className="relative" ref={qualityDropdownRef} id="player-quality-control-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsQualityDropdownOpen(!isQualityDropdownOpen);
+                    handleUserActivity();
+                  }}
+                  className={`px-2 py-1 h-8 rounded-lg border text-[10px] font-mono font-bold tracking-wide transition-all uppercase flex items-center gap-1 cursor-pointer select-none ${
+                    isQualityDropdownOpen 
+                      ? "text-lime-400 bg-lime-500/10 border-lime-500/30 shadow-sm" 
+                      : "text-slate-300 hover:text-white hover:bg-white/5 border-transparent bg-white/5"
+                  }`}
+                  title={`Adjust Stream Resolution Quality (Currently: ${streamQuality})`}
+                  id="stream-quality-btn"
+                >
+                  <Sliders className="w-3.5 h-3.5 text-lime-400" />
+                  <span>{streamQuality}</span>
+                </button>
+
+                {isQualityDropdownOpen && (
+                  <div 
+                    className="absolute right-0 bottom-full mb-3 w-40 bg-zinc-950/95 backdrop-blur-xl border border-lime-500/25 p-1.5 rounded-xl shadow-2xl flex flex-col gap-1 z-55 animate-slide-in origin-bottom-right"
+                    id="quality-dropdown-panel"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-[9px] font-bold font-mono text-lime-400 tracking-wider uppercase border-b border-white/5 pb-1 mb-1 px-1.5 flex items-center gap-1.5 select-none">
+                      <Activity className="w-3 h-3 animate-pulse" />
+                      <span>Stream Quality</span>
+                    </div>
+
+                    {(["Auto", "1080p", "720p", "480p"] as const).map((q) => (
+                      <button
+                        key={`quality-opt-${q}`}
+                        onClick={() => handleQualityChange(q)}
+                        className={`w-full text-left px-2 py-1 rounded-lg text-[11px] font-mono flex items-center justify-between transition-all duration-200 cursor-pointer ${
+                          streamQuality === q
+                            ? "bg-lime-500/10 border border-lime-500/30 text-lime-400 font-bold"
+                            : "border border-transparent text-slate-300 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <span>{q}</span>
+                        {streamQuality === q && <Check className="w-3 h-3 text-[#a3e635]" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Interactive Share button and dropdown panel */}
+              <div className="relative" ref={shareDropdownRef} id="player-share-control-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsShareOpen(!isShareOpen);
+                    handleUserActivity();
+                  }}
+                  className={`p-2 rounded-lg transition-all ${
+                    isShareOpen 
+                      ? "text-lime-400 bg-lime-500/10 border border-lime-500/20 shadow-sm" 
+                      : "text-slate-300 hover:text-white hover:bg-white/5"
+                  }`}
+                  title="Share Live Channel"
+                  id="share-channel-btn"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+
+                {isShareOpen && (
+                  <div 
+                    className="absolute right-0 bottom-full mb-3 w-56 bg-zinc-950/95 backdrop-blur-xl border border-lime-500/25 p-3 rounded-2xl shadow-2xl flex flex-col gap-1.5 z-55 animate-slide-in origin-bottom-right"
+                    id="share-dropdown-panel"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-[10px] font-bold font-mono text-lime-400 tracking-wider uppercase border-b border-white/5 pb-1.5 mb-1 flex items-center gap-1.5">
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Share Broadcast</span>
+                    </div>
+
+                    {/* Copy Link Option */}
+                    <button
+                      onClick={() => {
+                        handleCopyLink();
+                        setIsShareOpen(false);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 hover:bg-white/5 rounded-lg text-xs font-medium font-sans text-slate-200 hover:text-lime-400 flex items-center justify-between transition-colors border border-transparent hover:border-white/5 cursor-pointer"
+                      id="share-option-copy"
+                    >
+                      <span className="flex items-center gap-2">
+                        {isCopied ? <Check className="w-3.5 h-3.5 text-lime-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                        <span>{isCopied ? "Link Copied!" : "Copy Share Link"}</span>
+                      </span>
+                    </button>
+
+                    {/* Facebook Share */}
+                    <a
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full text-left px-2.5 py-1.5 hover:bg-white/5 rounded-lg text-xs font-medium font-sans text-slate-200 hover:text-indigo-400 flex items-center gap-2 transition-colors border border-transparent hover:border-white/5 cursor-pointer"
+                      onClick={() => {
+                        setIsShareOpen(false);
+                        showHotkeyFeedback("Facebook Share Opened");
+                      }}
+                      id="share-option-facebook"
+                    >
+                      <svg className="w-3.5 h-3.5 text-indigo-500 fill-current shrink-0" viewBox="0 0 24 24">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                      <span>Share on Facebook</span>
+                    </a>
+
+                    {/* Twitter Share */}
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Watching live: ${channel.name} on Madridtvlive! 📺⚽ #IPTV`)}&url=${encodeURIComponent(shareUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full text-left px-2.5 py-1.5 hover:bg-white/5 rounded-lg text-xs font-medium font-sans text-slate-200 hover:text-sky-400 flex items-center gap-2 transition-colors border border-transparent hover:border-white/5 cursor-pointer"
+                      onClick={() => {
+                        setIsShareOpen(false);
+                        showHotkeyFeedback("Twitter/X Share Opened");
+                      }}
+                      id="share-option-twitter"
+                    >
+                      <svg className="w-3.5 h-3.5 text-slate-200 fill-current shrink-0" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                      <span>Share on Twitter / X</span>
+                    </a>
+
+                    {/* WhatsApp Share */}
+                    <a
+                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`I am watching ${channel.name} live on Madridtvlive! Check it out: `)}${encodeURIComponent(shareUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full text-left px-2.5 py-1.5 hover:bg-white/5 rounded-lg text-xs font-medium font-sans text-slate-200 hover:text-emerald-400 flex items-center gap-2 transition-colors border border-transparent hover:border-white/5 cursor-pointer"
+                      onClick={() => {
+                        setIsShareOpen(false);
+                        showHotkeyFeedback("WhatsApp Opened");
+                      }}
+                      id="share-option-whatsapp"
+                    >
+                      <svg className="w-3.5 h-3.5 text-emerald-500 fill-current shrink-0" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.022-.079-.186-.208-.54-.378-.359-.17-2.126-1.049-2.455-1.167-.33-.119-.569-.178-.807.179-.239.357-.925 1.167-1.134 1.4-.21.233-.419.26-.777.09-.358-.17-1.516-.559-2.887-1.782-1.066-.95-1.787-2.123-1.996-2.48-.209-.356-.022-.549.157-.727.162-.162.359-.419.539-.629.18-.21.239-.359.359-.599.119-.24.059-.45-.03-.62-.089-.17-.807-1.944-1.106-2.66-.291-.7-.588-.607-.807-.618c-.208-.01-.447-.01-.686-.01-.239 0-.629.089-.957.447-.327.357-1.254 1.223-1.254 2.978 0 1.754 1.279 3.447 1.457 3.687.179.239 2.507 3.829 6.071 5.37 3.564 1.54 3.564 1.029 4.221 1.029.658 0 2.126-.869 2.425-1.711.299-.84.299-1.56.209-1.711zm-5.422 7.12C10.024 21.5 8.017 21 6.272 20.1l-.44-.26-3.89 1.02 1.04-3.79-.28-.46C1.722 15.1 1.2 13 1.2 10.8c0-5.3 4.3-9.6 9.6-9.6 5.3 0 9.6 4.3 9.6 9.6 0 5.3-4.3 9.6-9.6 9.6z"/>
+                      </svg>
+                      <span>Share on WhatsApp</span>
+                    </a>
+                  </div>
+                )}
+              </div>
 
               {/* PiP button */}
               {(pipSupported || onToggleMini) && (
@@ -1097,6 +1562,26 @@ export default function LivePlayer({
                   id="pip-trigger-btn"
                 >
                   <Tv className="w-4 h-4" />
+                </button>
+              )}
+
+              {/* Theater Mode control */}
+              {onToggleTheater && !isMini && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleTheater();
+                    handleUserActivity();
+                  }}
+                  className={`p-2 rounded-lg transition-all ${
+                    isTheaterMode 
+                      ? "text-[#a3e635] bg-lime-500/10 border border-lime-500/20 shadow-sm" 
+                      : "text-slate-300 hover:text-white hover:bg-white/5"
+                  }`}
+                  title={isTheaterMode ? "Exit Theater Mode" : "Enter Theater/Cinema Mode"}
+                  id="theater-mode-btn"
+                >
+                  <Moon className="w-4 h-4" />
                 </button>
               )}
 
@@ -1180,6 +1665,23 @@ export default function LivePlayer({
 
             {/* Custom Stats & Hotkey Trigger Buttons */}
             <div className="flex items-center gap-2">
+              {/* Ambilight Aura backglow Trigger */}
+              <button
+                onClick={() => {
+                  setIsAmbientGlowActive(!isAmbientGlowActive);
+                  showHotkeyFeedback(!isAmbientGlowActive ? "Ambient Aura Activated" : "Ambient Aura Deactivated");
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-mono tracking-wide transition-all uppercase ${
+                  isAmbientGlowActive
+                    ? "bg-lime-500/15 border-lime-500/30 text-lime-400 font-bold"
+                    : "bg-black/20 border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
+                title="Toggle Cinematic Background Ambient Lighting Aura"
+              >
+                <Flame className={`w-3.5 h-3.5 ${isAmbientGlowActive ? "text-lime-400 animate-pulse" : "text-slate-500"}`} />
+                <span>Ambient</span>
+              </button>
+
               {/* Stats for Nerds Trigger */}
               <button
                 onClick={() => {

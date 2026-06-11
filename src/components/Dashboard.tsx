@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { 
   Play, 
   Search, 
@@ -9,7 +9,15 @@ import {
   History, 
   TrendingUp, 
   Heart,
-  Grid
+  Grid,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Bell,
+  BellRing,
+  Clock,
+  Sparkles,
+  Trophy
 } from "lucide-react";
 import { Channel } from "../types";
 import ChannelCard from "./ChannelCard";
@@ -27,7 +35,57 @@ interface DashboardProps {
   isRefreshing: boolean;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  setCurrentCategory?: (category: string) => void;
 }
+
+const COMING_SOON_MATCHES = [
+  {
+    id: "m-2",
+    homeTeam: "United States",
+    homeFlag: "🇺🇸",
+    awayTeam: "Australia",
+    awayFlag: "🇦🇺",
+    date: "2026-06-11T19:30:00Z",
+    group: "Group B",
+    venue: "SoFi Stadium, Los Angeles",
+    bgImage: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=600"
+  },
+  {
+    id: "m-3",
+    homeTeam: "Canada",
+    homeFlag: "🇨🇦",
+    awayTeam: "Morocco",
+    awayFlag: "🇲🇦",
+    date: "2026-06-11T23:00:00Z",
+    group: "Group C",
+    venue: "BC Place, Vancouver",
+    bgImage: "https://images.unsplash.com/photo-1431324155629-1a6edd1dee50?auto=format&fit=crop&q=80&w=600"
+  },
+  {
+    id: "m-4",
+    homeTeam: "Argentina",
+    homeFlag: "🇦🇷",
+    awayTeam: "Sweden",
+    awayFlag: "🇸🇪",
+    date: "2026-06-12T14:00:00Z",
+    group: "Group D",
+    venue: "MetLife Stadium, New Jersey",
+    bgImage: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=600"
+  },
+  {
+    id: "m-5",
+    homeTeam: "Brazil",
+    homeFlag: "🇧🇷",
+    awayTeam: "Japan",
+    awayFlag: "🇯🇵",
+    date: "2026-06-12T17:30:00Z",
+    group: "Group E",
+    venue: "Hard Rock Stadium, Miami",
+    bgImage: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600"
+  }
+];
+
+
 
 export default function Dashboard({
   channels,
@@ -40,17 +98,69 @@ export default function Dashboard({
   onRefreshFeed,
   isRefreshing,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  setCurrentCategory
 }: DashboardProps) {
   const [showOnlyFeatured, setShowOnlyFeatured] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
-  const showNotification = (msg: string) => {
-    setNotification(msg);
+  const showNotification = useCallback((msg: string) => {
+    // Safely defer parent state updates to protect against React layout rendering conflicts
+    setTimeout(() => {
+      setNotification(msg);
+    }, 0);
     // Auto clear notification after 5 seconds
     setTimeout(() => {
       setNotification((current) => current === msg ? null : current);
     }, 5000);
+  }, []);
+
+  // 1. Featured Highlights Carousel hooks and states
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const scrollFeatured = (direction: "left" | "right") => {
+    if (sliderRef.current) {
+      const amt = direction === "left" ? -380 : 380;
+      sliderRef.current.scrollBy({ left: amt, behavior: "smooth" });
+    }
+  };
+
+  const featuredChannels = useMemo(() => {
+    const featured = channels.filter(c => c.isFeatured);
+    if (featured.length > 0) return featured.slice(0, 10);
+    // Fallback if no channels are explicitly flagged: pick some top priority channels
+    return channels.slice(0, 8);
+  }, [channels]);
+
+  // 2. Coming Soon Matches timers & notifications
+  const [now, setNow] = useState(new Date("2026-06-11T08:30:00Z")); // Preset to Simulated World Cup kickoff window
+  const [subscribedMatchIds, setSubscribedMatchIds] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(prev => new Date(prev.getTime() + 60000));
+    }, 30000); // simulated clock progression
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleToggleSubscribeMatch = (matchId: string, home: string, away: string) => {
+    setSubscribedMatchIds(prev => {
+      const active = prev.includes(matchId);
+      if (active) {
+        showNotification(`🔕 Alert disabled for ${home} vs ${away}.`);
+        return prev.filter(id => id !== matchId);
+      } else {
+        showNotification(`🔔 Real-time match alert active! We'll push standard alarms and notifications as soon as ${home} vs ${away} starts.`);
+        return [...prev, matchId];
+      }
+    });
+  };
+
+  const matchSliderRef = useRef<HTMLDivElement>(null);
+  const scrollMatches = (direction: "left" | "right") => {
+    if (matchSliderRef.current) {
+      const amt = direction === "left" ? -340 : 340;
+      matchSliderRef.current.scrollBy({ left: amt, behavior: "smooth" });
+    }
   };
 
   // Group channels by current category selection and search query
@@ -187,6 +297,198 @@ export default function Dashboard({
         />
       ) : (
         <>
+          {/* 1. FEATURED HIGHLIGHTS (Horizontal scrolling with cinematic thumbnails) */}
+          {!selectedChannel && currentCategory === "all" && !searchQuery.trim() && featuredChannels.length > 0 && (
+            <div className="space-y-4" id="premium-highlights-carousel-block">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#a3e635] animate-pulse" />
+                  <h2 className="text-xs font-black tracking-widest text-[#a3e635] uppercase font-mono bg-lime-500/10 px-2.5 py-1 rounded border border-lime-500/15">
+                    Featured Highlights
+                  </h2>
+                </div>
+                
+                {/* Scrolling navigation buttons */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => scrollFeatured("left")}
+                    className="p-1.5 rounded-lg bg-zinc-900 border border-white/5 hover:border-[#a3e635]/30 hover:bg-black text-slate-400 hover:text-white transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollFeatured("right")}
+                    className="p-1.5 rounded-lg bg-zinc-900 border border-white/5 hover:border-[#a3e635]/30 hover:bg-black text-slate-400 hover:text-white transition-all cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Horizontal scroll container */}
+              <div 
+                ref={sliderRef}
+                className="flex items-stretch gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scroll-smooth no-scrollbar"
+                style={{ scrollbarWidth: "none" }}
+              >
+                {featuredChannels.map((chan) => (
+                  <div
+                    key={`highlight-${chan.id}`}
+                    className="w-[240px] sm:w-[280px] shrink-0 snap-start"
+                  >
+                    <ChannelCard
+                      channel={chan}
+                      isActive={selectedChannel?.id === chan.id}
+                      isFavorite={favorites.includes(chan.id)}
+                      onSelect={() => onSelectChannel(chan)}
+                      onToggleFavorite={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(chan.id);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 2. COMING SOON MATCHES CALENDAR SECTION */}
+          {!selectedChannel && currentCategory === "all" && !searchQuery.trim() && (
+            <div className="space-y-4" id="dashboard-upcoming-matches-block">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                  <h2 className="text-xs font-black tracking-widest text-[#a3e635] uppercase font-mono bg-lime-500/10 px-2.5 py-1 rounded border border-lime-500/15">
+                    Coming Soon Matches
+                  </h2>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {setCurrentCategory && (
+                    <button
+                      onClick={() => setCurrentCategory("fifa_2026")}
+                      className="text-[9.5px] sm:text-[10px] font-bold text-[#a3e635] bg-lime-500/10 hover:bg-lime-500/15 px-2.5 py-1.5 rounded-lg border border-lime-500/15 transition-all flex items-center gap-1 cursor-pointer font-mono"
+                    >
+                      ENTER MATCH CENTER
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {/* Scrolling navigation buttons */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => scrollMatches("left")}
+                      className="p-1.5 rounded-lg bg-zinc-900 border border-white/5 hover:border-[#a3e635]/30 hover:bg-black text-slate-400 hover:text-white transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => scrollMatches("right")}
+                      className="p-1.5 rounded-lg bg-zinc-900 border border-white/5 hover:border-[#a3e635]/30 hover:bg-black text-slate-400 hover:text-white transition-all cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Horizontal Scroll Containers for matches */}
+              <div 
+                ref={matchSliderRef}
+                className="flex items-stretch gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scroll-smooth no-scrollbar"
+                style={{ scrollbarWidth: "none" }}
+              >
+                {COMING_SOON_MATCHES.map((match) => {
+                  const matchTime = new Date(match.date).getTime();
+                  const diff = matchTime - now.getTime();
+                  const isSubscribed = subscribedMatchIds.includes(match.id);
+                  
+                  let countdownText = "Kickoff imminent";
+                  if (diff > 0) {
+                    const hours = Math.floor(diff / 3600000);
+                    const minutes = Math.floor((diff % 3600000) / 60000);
+                    countdownText = `${hours}h ${minutes}m left`;
+                  }
+
+                  return (
+                    <div
+                      key={`coming-${match.id}`}
+                      className="w-[280px] sm:w-[320px] shrink-0 relative rounded-2xl overflow-hidden bg-black/60 border border-white/5 hover:border-[#a3e635]/20 transition-all p-4 flex flex-col justify-between shadow-xl snap-start group"
+                    >
+                      {/* Sub-card decorative wallpaper overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-black/80 z-0" />
+                      <img 
+                        src={match.bgImage} 
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover opacity-15 grayscale transition-transform duration-500 group-hover:scale-105"
+                      />
+
+                      {/* Top Row: Meta information */}
+                      <div className="relative z-10 flex items-center justify-between">
+                        <span className="text-[9px] font-bold font-mono tracking-wide text-slate-400 bg-white/5 px-2 py-0.5 rounded uppercase border border-white/5">
+                          {match.group}
+                        </span>
+                        
+                        <span className="text-[10px] font-mono font-bold text-[#a3e635] bg-lime-500/10 px-2 py-0.5 rounded border border-lime-500/10 flex items-center gap-1 animate-pulse">
+                          <Clock className="w-3 h-3 text-lime-400" />
+                          <span>{countdownText}</span>
+                        </span>
+                      </div>
+
+                      {/* Main Team Battle Cards Row */}
+                      <div className="relative z-10 py-4 flex items-center justify-between select-none">
+                        {/* Home team */}
+                        <div className="flex flex-col items-center flex-1 max-w-[100px] text-center">
+                          <span className="text-3xl filter shadow hover:scale-110 transition-transform">{match.homeFlag}</span>
+                          <span className="text-[11px] font-black font-sans text-white mt-1.5 truncate max-w-full leading-tight">
+                            {match.homeTeam}
+                          </span>
+                        </div>
+
+                        {/* VS Indicator line */}
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] font-black font-mono text-lime-400 px-2 py-1 rounded-full bg-lime-500/10 border border-lime-500/15">
+                            VS
+                          </span>
+                        </div>
+
+                        {/* Away team */}
+                        <div className="flex flex-col items-center flex-1 max-w-[100px] text-center">
+                          <span className="text-3xl filter shadow hover:scale-110 transition-transform">{match.awayFlag}</span>
+                          <span className="text-[11px] font-black font-sans text-white mt-1.5 truncate max-w-full leading-tight">
+                            {match.awayTeam}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Lower actions deck */}
+                      <div className="relative z-10 pt-3 border-t border-white/5 flex items-center justify-between gap-2.5">
+                        <div className="truncate flex flex-col">
+                          <span className="text-[8px] font-bold font-mono text-slate-500 uppercase tracking-widest block">VENUE</span>
+                          <span className="text-[10.5px] text-slate-300 truncate max-w-[125px] block font-sans font-medium">
+                            {match.venue}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => handleToggleSubscribeMatch(match.id, match.homeTeam, match.awayTeam)}
+                          className={`px-3 py-1.5 rounded-xl text-[9px] font-bold font-mono uppercase tracking-wide flex items-center justify-center gap-1 border transition-all cursor-pointer ${
+                            isSubscribed
+                              ? "bg-lime-500/15 border-lime-500/35 text-lime-300 animate-pulse"
+                              : "bg-zinc-900 border-white/5 text-slate-400 hover:text-white hover:bg-black"
+                          }`}
+                          title={isSubscribed ? "Matches Alarmed" : "Enable kickoff alerts"}
+                        >
+                          {isSubscribed ? <BellRing className="w-3 h-3 text-lime-400" /> : <Bell className="w-3 h-3 text-slate-400" />}
+                          <span>{isSubscribed ? "Notified" : "Notify Me"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Hero Welcome Banner Spotlight - only visible if NO channel is selected and we are on standard categories */}
           {!selectedChannel && spotlightChannel && currentCategory === "all" && !searchQuery && (
             <div 

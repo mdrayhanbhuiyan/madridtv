@@ -28,6 +28,7 @@ export default function App() {
   const [sidebarOpenOnMobile, setSidebarOpenOnMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMiniPlayerActive, setIsMiniPlayerActive] = useState(false);
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
 
   // 1. Fetch channels from server-side api with modern client-side fallback support for static hosting (Vercel)
   const fetchChannels = async (forceRefresh = false) => {
@@ -98,6 +99,37 @@ export default function App() {
       console.error("Failed to parse stored watch history:", err);
     }
   }, []);
+
+  // 2.5 Auto-deep-link support for shared channel parameters
+  useEffect(() => {
+    if (channels.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const urlChannelId = params.get("channelId") || params.get("channel");
+      if (urlChannelId) {
+        const matchingChannel = channels.find((c) => c.id === urlChannelId);
+        if (matchingChannel) {
+          setSelectedChannel(matchingChannel);
+        }
+      }
+    }
+  }, [channels]);
+
+  // 2.6 Toggle theater mode off with Escape key and reset on clear
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsTheaterMode(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedChannel) {
+      setIsTheaterMode(false);
+    }
+  }, [selectedChannel]);
 
   // 3. Keep favorites in sync with local storage
   const handleToggleFavorite = (channelId: string) => {
@@ -172,21 +204,23 @@ export default function App() {
 
       {/* Sidebar Component */}
       <div className="relative z-10 flex h-full w-full overflow-hidden" id="immersive-layout-content-wrap">
-        <Sidebar
-          currentCategory={currentCategory}
-          setCurrentCategory={setCurrentCategory}
-          channels={channels}
-          favorites={favorites}
-          history={history}
-          isOpenOnMobile={sidebarOpenOnMobile}
-          setIsOpenOnMobile={setSidebarOpenOnMobile}
-        />
+        <div className={`transition-all duration-500 flex h-full shrink-0 ${isTheaterMode && selectedChannel ? "opacity-0 blur-lg pointer-events-none overflow-hidden w-0 md:-mr-64" : ""}`}>
+          <Sidebar
+            currentCategory={currentCategory}
+            setCurrentCategory={setCurrentCategory}
+            channels={channels}
+            favorites={favorites}
+            history={history}
+            isOpenOnMobile={sidebarOpenOnMobile}
+            setIsOpenOnMobile={setSidebarOpenOnMobile}
+          />
+        </div>
 
         {/* Main Stream Platform Panel */}
         <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10" id="iptv-main-stream-view">
           
           {/* Global Header Bar */}
-          <header className="flex items-center justify-between gap-4 px-4 md:px-8 py-3.5 bg-black/40 backdrop-blur-xl border-b border-white/10 z-20 shrink-0" id="global-header-bar">
+          <header className={`flex items-center justify-between gap-4 px-4 md:px-8 border-b border-white/10 z-20 shrink-0 transition-all duration-500 ${isTheaterMode && selectedChannel ? "opacity-10 py-1 blur-[2px] pointer-events-none" : "bg-black/40 backdrop-blur-xl py-3.5"}`} id="global-header-bar">
             <div className="flex items-center gap-3">
               {/* Mobile menu trigger */}
               <button
@@ -233,7 +267,7 @@ export default function App() {
           </header>
 
           {/* Subtle Now Playing Scrolling Ticker */}
-          <div className="bg-zinc-950/90 border-b border-white/5 py-2.5 px-4 md:px-8 flex items-center gap-3 overflow-hidden text-xs shrink-0 select-none z-15" id="now-playing-sub-ticker">
+          <div className={`border-b border-white/5 px-4 md:px-8 flex items-center gap-3 overflow-hidden text-xs shrink-0 select-none z-15 transition-all duration-500 ${isTheaterMode && selectedChannel ? "opacity-10 py-1 blur-[2px] pointer-events-none" : "bg-zinc-950/90 py-2.5"}`} id="now-playing-sub-ticker">
             <div className="flex items-center gap-1.5 shrink-0 bg-lime-500/15 border border-lime-500/30 text-lime-400 font-mono text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-lime-500 live-pulse" />
               Now Playing
@@ -307,9 +341,36 @@ export default function App() {
               
               {/* If a channel is actively selected for live play */}
               {selectedChannel ? (
-                <div className="flex-1 flex flex-col overflow-y-auto" id="split-active-player-and-dashboard">
-                   {/* Spaced active video panel container */}
-                  <div className="p-4 md:p-8 shrink-0 max-w-5xl mx-auto w-full" id="player-view-wrapper">
+                <div 
+                  className={`flex-1 flex flex-col overflow-y-auto transition-all duration-500 ${isTheaterMode ? "bg-[#030303]" : ""}`} 
+                  id="split-active-player-and-dashboard"
+                  onClick={() => {
+                    if (isTheaterMode) {
+                      setIsTheaterMode(false);
+                    }
+                  }}
+                >
+                  {/* Theater Mode Top Banner Hint */}
+                  {isTheaterMode && (
+                    <div 
+                      className="w-full py-2 bg-black/60 border-b border-white/5 flex items-center justify-center gap-2 text-[11px] font-sans text-slate-400 select-none animate-fade-in pointer-events-none sticky top-0 z-30"
+                      id="theater-mode-top-banner"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#a3e635] animate-pulse" />
+                      <span>Theater Mode Active • Click anywhere around the player or press <kbd className="bg-white/10 px-1 py-0.5 rounded font-mono font-bold text-[9.5px]">ESC</kbd> to exit</span>
+                    </div>
+                  )}
+
+                  {/* Spaced active video panel container */}
+                  <div 
+                    className={`shrink-0 mx-auto w-full transition-all duration-500 ${
+                      isTheaterMode 
+                        ? "p-4 md:py-10 md:px-16 max-w-6xl relative z-50 scale-[1.02]" 
+                        : "p-4 md:p-8 max-w-5xl relative z-10"
+                    }`}
+                    id="player-view-wrapper"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {isMiniPlayerActive ? (
                       <div className="bg-gradient-to-br from-zinc-900/60 to-black/40 border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden" id="pip-active-placeholder">
                         {/* Soft ambient lemon theme highlight */}
@@ -344,12 +405,17 @@ export default function App() {
                         onNextChannel={currentFilteredList.length > 1 ? handleNextChannel : undefined}
                         isMini={false}
                         onToggleMini={() => setIsMiniPlayerActive(true)}
+                        isTheaterMode={isTheaterMode}
+                        onToggleTheater={() => setIsTheaterMode(!isTheaterMode)}
+                        historyIds={history}
+                        channels={channels}
+                        onSelectChannel={handleSelectChannel}
                       />
                     )}
                   </div>
 
                   {/* Sub-directories listing below to encourage seamless surf flipping */}
-                  <div className="border-t border-white/10 bg-black/40 pb-10" id="sub-listing-bottom-shelf">
+                  <div className={`border-t border-white/10 bg-black/40 pb-10 transition-all duration-500 ${isTheaterMode ? "opacity-[0.02] filter blur-[4px] pointer-events-none max-h-0 overflow-hidden" : ""}`} id="sub-listing-bottom-shelf">
                     <Dashboard
                       channels={channels}
                       favorites={favorites}
@@ -362,6 +428,7 @@ export default function App() {
                       isRefreshing={isRefreshing}
                       searchQuery={searchQuery}
                       setSearchQuery={setSearchQuery}
+                      setCurrentCategory={setCurrentCategory}
                     />
                   </div>
                 </div>
@@ -379,6 +446,7 @@ export default function App() {
                   isRefreshing={isRefreshing}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
+                  setCurrentCategory={setCurrentCategory}
                 />
               )}
 
@@ -399,6 +467,9 @@ export default function App() {
                     onNextChannel={currentFilteredList.length > 1 ? handleNextChannel : undefined}
                     isMini={true}
                     onToggleMini={() => setIsMiniPlayerActive(false)}
+                    historyIds={history}
+                    channels={channels}
+                    onSelectChannel={handleSelectChannel}
                   />
                 </div>
               )}
