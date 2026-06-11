@@ -60,3 +60,38 @@ body {
 h1, h2, h3, h4, .font-display {
   font-family: var(--font-display);
 }
+
+/* Custom marquee ticker animation */
+@keyframes ticker-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-33.333%, 0, 0);
+  }
+}
+
+.animate-ticker-scroll {
+  display: inline-flex;
+  animation: ticker-scroll 35s linear infinite;
+}
+
+.animate-ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* Custom slide-in animation for floating mini-player */
+@keyframes slide-in-bottom-right {
+  0% {
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-bottom-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

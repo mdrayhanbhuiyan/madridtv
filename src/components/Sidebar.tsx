@@ -1,3 +1,4 @@
+import React, { useState, useRef } from "react";
 import { 
   Tv, 
   Sparkles, 
@@ -36,6 +37,59 @@ export default function Sidebar({
   setIsOpenOnMobile
 }: SidebarProps) {
   
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [sidebarOffset, setSidebarOffset] = useState(0);
+  const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
+
+  const handleSidebarTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+    setIsDraggingSidebar(true);
+    setSidebarOffset(0);
+  };
+
+  const handleSidebarTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || e.touches.length !== 1) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = touchStartRef.current.x - currentX;
+    const diffY = Math.abs(touchStartRef.current.y - currentY);
+
+    // If the touch movement is primarily vertical, ignore drag to support native vertical scrolling
+    if (diffY > Math.abs(diffX) * 1.5 && !isDraggingSidebar) {
+      setIsDraggingSidebar(false);
+      setSidebarOffset(0);
+      touchStartRef.current = null;
+      return;
+    }
+
+    // Only swipe left to dismiss!
+    if (diffX > 0) {
+      setSidebarOffset(-diffX);
+    } else {
+      setSidebarOffset(0);
+    }
+  };
+
+  const handleSidebarTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const currentX = e.changedTouches[0].clientX;
+    const currentY = e.changedTouches[0].clientY;
+    const diffX = touchStartRef.current.x - currentX;
+    const diffY = Math.abs(touchStartRef.current.y - currentY);
+
+    setIsDraggingSidebar(false);
+    // If swiped more than 60px horizontally and primarily horizontal:
+    if (diffX > 60 && diffX > diffY) {
+      setIsOpenOnMobile(false);
+    }
+    setSidebarOffset(0);
+    touchStartRef.current = null;
+  };
+
   // Calculate channel counts per category
   const getCategoryCount = (category: string) => {
     if (category === "all") return channels.length;
@@ -208,8 +262,15 @@ export default function Sidebar({
           id="sidebar-backdrop-mobile"
         >
           <div 
-            className="w-72 h-full"
+            className="w-72 h-full touch-pan-y"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleSidebarTouchStart}
+            onTouchMove={handleSidebarTouchMove}
+            onTouchEnd={handleSidebarTouchEnd}
+            style={{
+              transform: isDraggingSidebar ? `translateX(${sidebarOffset}px)` : 'none',
+              transition: isDraggingSidebar ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
             id="sidebar-drawer-mobile"
           >
             <SidebarContent />

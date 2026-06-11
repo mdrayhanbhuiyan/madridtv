@@ -7,7 +7,8 @@ import {
   WifiOff, 
   Loader2, 
   RefreshCw,
-  Info
+  Info,
+  Search
 } from "lucide-react";
 import { Channel } from "./types";
 import Sidebar from "./components/Sidebar";
@@ -24,6 +25,8 @@ export default function App() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [history, setHistory] = useState<string[]>([]);
   const [sidebarOpenOnMobile, setSidebarOpenOnMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isMiniPlayerActive, setIsMiniPlayerActive] = useState(false);
 
   // 1. Fetch channels from server-side api
   const fetchChannels = async (forceRefresh = false) => {
@@ -106,13 +109,30 @@ export default function App() {
   // 5. Navigate Channels within selected grid context (Prev / Next inside core player UI)
   const currentFilteredList = useMemo(() => {
     return channels.filter((channel) => {
-      if (currentCategory === "featured") return channel.isFeatured;
-      if (currentCategory === "favorites") return favorites.includes(channel.id);
-      if (currentCategory === "history") return history.includes(channel.id);
-      if (currentCategory !== "all" && channel.category !== currentCategory) return false;
+      // 1. Category check
+      if (currentCategory === "featured") {
+        if (!channel.isFeatured) return false;
+      } else if (currentCategory === "favorites") {
+        if (!favorites.includes(channel.id)) return false;
+      } else if (currentCategory === "history") {
+        if (!history.includes(channel.id)) return false;
+      } else if (currentCategory !== "all" && channel.category !== currentCategory) {
+        return false;
+      }
+
+      // 2. Search query check
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        return (
+          channel.name.toLowerCase().includes(q) ||
+          channel.originalGroup.toLowerCase().includes(q) ||
+          channel.category.toLowerCase().includes(q)
+        );
+      }
+
       return true;
     });
-  }, [channels, currentCategory, favorites, history]);
+  }, [channels, currentCategory, favorites, history, searchQuery]);
 
   const handlePrevChannel = () => {
     if (!selectedChannel || currentFilteredList.length <= 1) return;
@@ -152,25 +172,93 @@ export default function App() {
         {/* Main Stream Platform Panel */}
         <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10" id="iptv-main-stream-view">
           
-          {/* Mobile Header bar */}
-          <header className="flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-xl border-b border-white/10 md:hidden z-10" id="mobile-top-bar">
-            <button
-              onClick={() => setSidebarOpenOnMobile(true)}
-              className="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5"
-              id="mobile-menu-trigger"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-orange-600 rounded flex items-center justify-center font-bold text-xs text-white shadow-md shadow-orange-950/40 font-display">
-                M
+          {/* Global Header Bar */}
+          <header className="flex items-center justify-between gap-4 px-4 md:px-8 py-3.5 bg-black/40 backdrop-blur-xl border-b border-white/10 z-20 shrink-0" id="global-header-bar">
+            <div className="flex items-center gap-3">
+              {/* Mobile menu trigger */}
+              <button
+                onClick={() => setSidebarOpenOnMobile(true)}
+                className="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 md:hidden transition-colors"
+                id="mobile-menu-trigger"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              
+              {/* App Identity */}
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-orange-600 rounded flex items-center justify-center font-bold text-xs text-white shadow-md shadow-orange-950/40 font-display">
+                  M
+                </div>
+                <span className="font-bold text-sm md:text-base tracking-tight font-display text-white">
+                  Madrid<span className="text-orange-500">tvlive</span>
+                </span>
               </div>
-              <span className="font-bold text-sm tracking-tight font-display text-white">Madrid<span className="text-orange-500">tvlive</span></span>
             </div>
 
-            <div className="w-5" /> {/* Balance spacer */}
+            {/* Global Search Bar */}
+            <div className="relative flex-1 max-w-[160px] sm:max-w-xs md:max-w-sm" id="global-search-container">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search channels..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-black/50 border border-white/10 focus:border-orange-500/80 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50 transition-all font-sans"
+                id="global-search-input"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors text-xs font-bold leading-none"
+                  title="Clear search"
+                  id="global-search-clear"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </header>
+
+          {/* Subtle Now Playing Scrolling Ticker */}
+          <div className="bg-zinc-950/90 border-b border-white/5 py-2.5 px-4 md:px-8 flex items-center gap-3 overflow-hidden text-xs shrink-0 select-none z-15" id="now-playing-sub-ticker">
+            <div className="flex items-center gap-1.5 shrink-0 bg-orange-500/15 border border-orange-500/30 text-orange-400 font-mono text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 live-pulse" />
+              Now Playing
+            </div>
+            
+            <div className="relative flex-1 overflow-hidden" id="ticker-scroll-wrapper">
+              <div className="animate-ticker-scroll inline-flex whitespace-nowrap gap-12 text-slate-400 font-mono text-[11px] cursor-help">
+                {selectedChannel ? (
+                  <>
+                    <span className="inline-flex items-center gap-1">
+                      Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
+                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-orange-400 font-extrabold uppercase text-[9.5px] px-1 bg-orange-500/10 border border-orange-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
+                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-orange-400 font-extrabold uppercase text-[9.5px] px-1 bg-orange-500/10 border border-orange-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
+                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-orange-400 font-extrabold uppercase text-[9.5px] px-1 bg-orange-500/10 border border-orange-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
+                      <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>Welcome to Madridtvlive Premium • Select any channel below to immediately trigger seamless live stream feeds</span>
+                    <span>Welcome to Madridtvlive Premium • Select any channel below to immediately trigger seamless live stream feeds</span>
+                    <span>Welcome to Madridtvlive Premium • Select any channel below to immediately trigger seamless live stream feeds</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Dynamic Inner Body rendering container status */}
           {isFetching ? (
@@ -207,15 +295,44 @@ export default function App() {
               {/* If a channel is actively selected for live play */}
               {selectedChannel ? (
                 <div className="flex-1 flex flex-col overflow-y-auto" id="split-active-player-and-dashboard">
-                  {/* Spaced active video panel container */}
+                   {/* Spaced active video panel container */}
                   <div className="p-4 md:p-8 shrink-0 max-w-5xl mx-auto w-full" id="player-view-wrapper">
-                    <LivePlayer
-                      channel={selectedChannel}
-                      isFavorite={favorites.includes(selectedChannel.id)}
-                      onToggleFavorite={() => handleToggleFavorite(selectedChannel.id)}
-                      onPrevChannel={currentFilteredList.length > 1 ? handlePrevChannel : undefined}
-                      onNextChannel={currentFilteredList.length > 1 ? handleNextChannel : undefined}
-                    />
+                    {isMiniPlayerActive ? (
+                      <div className="bg-gradient-to-br from-zinc-900/60 to-black/40 border border-white/5 rounded-3xl p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden" id="pip-active-placeholder">
+                        {/* Soft ambient orange theme highlight */}
+                        <div className="absolute top-0 right-0 w-[40%] h-[150%] bg-orange-500/5 blur-3xl -mr-10 -mt-10 rounded-full z-0 pointer-events-none" />
+                        
+                        <div className="flex items-center gap-4 relative z-10" id="pip-placeholder-meta">
+                          <div className="w-12 h-12 bg-orange-500/10 rounded-2xl border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
+                            <Tv className="w-6 h-6 animate-pulse" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold font-display text-white">Picture-in-Picture Active</h3>
+                            <p className="text-xs text-slate-400 mt-1 max-w-md font-sans leading-relaxed">
+                              "{selectedChannel.name}" is playing in a floating video overlay. Swipe, search, and browse categories below freely!
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setIsMiniPlayerActive(false)}
+                          className="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-xl text-xs hover:scale-102 hover:shadow-orange-500/15 transition-all shadow-lg shadow-orange-950/20 relative z-10 shrink-0"
+                          id="pip-restore-btn"
+                        >
+                          Restore Player Inline
+                        </button>
+                      </div>
+                    ) : (
+                      <LivePlayer
+                        channel={selectedChannel}
+                        isFavorite={favorites.includes(selectedChannel.id)}
+                        onToggleFavorite={() => handleToggleFavorite(selectedChannel.id)}
+                        onPrevChannel={currentFilteredList.length > 1 ? handlePrevChannel : undefined}
+                        onNextChannel={currentFilteredList.length > 1 ? handleNextChannel : undefined}
+                        isMini={false}
+                        onToggleMini={() => setIsMiniPlayerActive(true)}
+                      />
+                    )}
                   </div>
 
                   {/* Sub-directories listing below to encourage seamless surf flipping */}
@@ -230,6 +347,8 @@ export default function App() {
                       onToggleFavorite={handleToggleFavorite}
                       onRefreshFeed={() => fetchChannels(true)}
                       isRefreshing={isRefreshing}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
                     />
                   </div>
                 </div>
@@ -245,7 +364,30 @@ export default function App() {
                   onToggleFavorite={handleToggleFavorite}
                   onRefreshFeed={() => fetchChannels(true)}
                   isRefreshing={isRefreshing}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
                 />
+              )}
+
+              {/* Draggable/Fixed Floating Mini-Player Container with high-end dropshadow */}
+              {isMiniPlayerActive && selectedChannel && (
+                <div 
+                  className="fixed bottom-6 right-6 w-72 sm:w-[360px] md:w-[420px] aspect-video z-50 shadow-2xl rounded-2xl border border-white/15 bg-zinc-950 overflow-hidden transition-all animate-slide-in duration-300"
+                  id="floating-mini-player-dock"
+                  style={{
+                    boxShadow: "0 25px 60px -10px rgba(0, 0, 0, 0.95)"
+                  }}
+                >
+                  <LivePlayer
+                    channel={selectedChannel}
+                    isFavorite={favorites.includes(selectedChannel.id)}
+                    onToggleFavorite={() => handleToggleFavorite(selectedChannel.id)}
+                    onPrevChannel={currentFilteredList.length > 1 ? handlePrevChannel : undefined}
+                    onNextChannel={currentFilteredList.length > 1 ? handleNextChannel : undefined}
+                    isMini={true}
+                    onToggleMini={() => setIsMiniPlayerActive(false)}
+                  />
+                </div>
               )}
 
             </div>

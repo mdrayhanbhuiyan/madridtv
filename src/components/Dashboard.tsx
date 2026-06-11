@@ -24,6 +24,8 @@ interface DashboardProps {
   onToggleFavorite: (channelId: string) => void;
   onRefreshFeed: () => void;
   isRefreshing: boolean;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
 export default function Dashboard({
@@ -35,9 +37,10 @@ export default function Dashboard({
   onSelectChannel,
   onToggleFavorite,
   onRefreshFeed,
-  isRefreshing
+  isRefreshing,
+  searchQuery,
+  setSearchQuery
 }: DashboardProps) {
-  const [searchQuery, setSearchQuery] = useState("");
   const [showOnlyFeatured, setShowOnlyFeatured] = useState(false);
 
   // Group channels by current category selection and search query
