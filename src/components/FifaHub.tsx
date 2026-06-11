@@ -45,90 +45,126 @@ interface FifaMatch {
 }
 
 export default function FifaHub({ channels, onSelectChannel, onShowNotification }: FifaHubProps) {
-  // Live matches state
-  const [matches, setMatches] = useState<FifaMatch[]>([
-    {
-      id: "m-1",
-      homeTeam: "Mexico",
-      homeFlag: "🇲🇽",
-      awayTeam: "South Africa",
-      awayFlag: "🇿🇦",
-      date: "2026-06-11T16:00:00Z",
-      status: "LIVE",
-      homeScore: 2,
-      awayScore: 1,
-      minute: 74,
-      group: "Group A",
-      venue: "Estadio Azteca, Mexico City",
-      scorers: "Chicharito II (18'), Lozano Jr. (54') • Foster (39')"
-    },
-    {
-      id: "m-2",
-      homeTeam: "United States",
-      homeFlag: "🇺🇸",
-      awayTeam: "Australia",
-      awayFlag: "🇦🇺",
-      date: "2026-06-11T19:30:00Z",
-      status: "UPCOMING",
-      group: "Group B",
-      venue: "SoFi Stadium, Los Angeles",
-    },
-    {
-      id: "m-3",
-      homeTeam: "Canada",
-      homeFlag: "🇨🇦",
-      awayTeam: "Morocco",
-      awayFlag: "🇲🇦",
-      date: "2026-06-11T23:00:00Z",
-      status: "UPCOMING",
-      group: "Group C",
-      venue: "BC Place, Vancouver",
-    },
-    {
-      id: "m-4",
-      homeTeam: "Argentina",
-      homeFlag: "🇦🇷",
-      awayTeam: "Sweden",
-      awayFlag: "🇸🇪",
-      date: "2026-06-12T14:00:00Z",
-      status: "UPCOMING",
-      group: "Group D",
-      venue: "MetLife Stadium, New Jersey",
-    },
-    {
-      id: "m-5",
-      homeTeam: "Brazil",
-      homeFlag: "🇧🇷",
-      awayTeam: "Japan",
-      awayFlag: "🇯🇵",
-      date: "2026-06-12T17:30:00Z",
-      status: "UPCOMING",
-      group: "Group E",
-      venue: "Hard Rock Stadium, Miami",
-    },
-    {
-      id: "m-6",
-      homeTeam: "England",
-      homeFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-      awayTeam: "Ghana",
-      awayFlag: "🇬🇭",
-      date: "2026-06-12T21:00:00Z",
-      status: "UPCOMING",
-      group: "Group F",
-      venue: "Mercedes-Benz Stadium, Atlanta",
-    },
-    {
-      id: "m-7",
-      homeTeam: "Spain",
-      homeFlag: "🇪🇸",
-      awayTeam: "Saudi Arabia",
-      awayFlag: "🇸🇦",
-      date: "2026-06-13T13:00:00Z",
-      status: "UPCOMING",
-      group: "Group G",
-      venue: "AT&T Stadium, Dallas",
-    }
-  ]);
+  // Live matches state computed dynamically so they are always in active play
+  const [matches, setMatches] = useState<FifaMatch[]>(() => {
+    const r = new Date();
+    
+    // m-1 started 45 minutes ago (LIVE!)
+    const d1 = new Date(r);
+    d1.setMinutes(d1.getMinutes() - 45);
+
+    // m-2 starts in 2 hours
+    const d2 = new Date(r);
+    d2.setHours(d2.getHours() + 2);
+
+    // m-3 starts in 5 hours
+    const d3 = new Date(r);
+    d3.setHours(d3.getHours() + 5);
+
+    // m-4 starts tomorrow at 14:00
+    const d4 = new Date(r);
+    d4.setDate(d4.getDate() + 1);
+    d4.setHours(14); d4.setMinutes(0); d4.setSeconds(0);
+
+    // m-5 starts tomorrow at 17:30
+    const d5 = new Date(r);
+    d5.setDate(d5.getDate() + 1);
+    d5.setHours(17); d5.setMinutes(30); d5.setSeconds(0);
+
+    // m-6 starts tomorrow at 21:00
+    const d6 = new Date(r);
+    d6.setDate(d6.getDate() + 1);
+    d6.setHours(21); d6.setMinutes(0); d6.setSeconds(0);
+
+    // m-7 starts in 2 days at 13:00
+    const d7 = new Date(r);
+    d7.setDate(d7.getDate() + 2);
+    d7.setHours(13); d7.setMinutes(0); d7.setSeconds(0);
+
+    return [
+      {
+        id: "m-1",
+        homeTeam: "Mexico",
+        homeFlag: "🇲🇽",
+        awayTeam: "South Africa",
+        awayFlag: "🇿🇦",
+        date: d1.toISOString(),
+        status: "LIVE",
+        homeScore: 2,
+        awayScore: 1,
+        minute: 45,
+        group: "Group A",
+        venue: "Estadio Azteca, Mexico City",
+        scorers: "Chicharito II (18'), Lozano Jr. (54') • Foster (39')"
+      },
+      {
+        id: "m-2",
+        homeTeam: "United States",
+        homeFlag: "🇺🇸",
+        awayTeam: "Australia",
+        awayFlag: "🇦🇺",
+        date: d2.toISOString(),
+        status: "UPCOMING",
+        group: "Group B",
+        venue: "SoFi Stadium, Los Angeles",
+      },
+      {
+        id: "m-3",
+        homeTeam: "Canada",
+        homeFlag: "🇨🇦",
+        awayTeam: "Morocco",
+        awayFlag: "🇲🇦",
+        date: d3.toISOString(),
+        status: "UPCOMING",
+        group: "Group C",
+        venue: "BC Place, Vancouver",
+      },
+      {
+        id: "m-4",
+        homeTeam: "Argentina",
+        homeFlag: "🇦🇷",
+        awayTeam: "Sweden",
+        awayFlag: "🇸🇪",
+        date: d4.toISOString(),
+        status: "UPCOMING",
+        group: "Group D",
+        venue: "MetLife Stadium, New Jersey",
+      },
+      {
+        id: "m-5",
+        homeTeam: "Brazil",
+        homeFlag: "🇧🇷",
+        awayTeam: "Japan",
+        awayFlag: "🇯🇵",
+        date: d5.toISOString(),
+        status: "UPCOMING",
+        group: "Group E",
+        venue: "Hard Rock Stadium, Miami",
+      },
+      {
+        id: "m-6",
+        homeTeam: "England",
+        homeFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        awayTeam: "Ghana",
+        awayFlag: "🇬🇭",
+        date: d6.toISOString(),
+        status: "UPCOMING",
+        group: "Group F",
+        venue: "Mercedes-Benz Stadium, Atlanta",
+      },
+      {
+        id: "m-7",
+        homeTeam: "Spain",
+        homeFlag: "🇪🇸",
+        awayTeam: "Saudi Arabia",
+        awayFlag: "🇸🇦",
+        date: d7.toISOString(),
+        status: "UPCOMING",
+        group: "Group G",
+        venue: "AT&T Stadium, Dallas",
+      }
+    ];
+  });
 
   // User Location Tracing State
   const [detectedLocation, setDetectedLocation] = useState<{
@@ -274,7 +310,7 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
   };
   
   // Real-time ticking time to calculate countdown
-  const [currentTime, setCurrentTime] = useState<Date>(new Date("2026-06-11T07:52:20Z"));
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   // Sponsor Video Ads Panel state
   const [isAdOpen, setIsAdOpen] = useState(false);
@@ -334,6 +370,60 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
     fetchLocation();
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  // Actual real-world live soccer scores from global API proxy
+  const [actualLiveMatches, setActualLiveMatches] = useState<FifaMatch[]>([]);
+  const [isLoadingActualScores, setIsLoadingActualScores] = useState<boolean>(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchActualLiveScores = async () => {
+      try {
+        const res = await fetch("/api/live-scores");
+        if (res.ok) {
+          const data = await res.json();
+          if (active && data && Array.isArray(data.events)) {
+            // Map actual ESPN events to robust FifaMatch structure
+            const mapped = data.events.map((ev: any) => {
+              const comp = ev.competitions?.[0];
+              const home = comp?.competitors?.find((c: any) => c.homeAway === "home");
+              const away = comp?.competitors?.find((c: any) => c.homeAway === "away");
+              
+              return {
+                id: `real-${ev.id}`,
+                homeTeam: home?.team?.displayName || "Home Team",
+                homeFlag: home?.team?.logo || "⚽",
+                awayTeam: away?.team?.displayName || "Away Team",
+                awayFlag: away?.team?.logo || "⚽",
+                date: ev.date || new Date().toISOString(),
+                // Convert ESPN state to LIVE, FINISHED, UPCOMING
+                status: ev.status?.type?.state === "in" ? "LIVE" : (ev.status?.type?.state === "post" ? "FINISHED" : "UPCOMING"),
+                homeScore: home?.score !== undefined ? parseInt(home.score) : 0,
+                awayScore: away?.score !== undefined ? parseInt(away.score) : 0,
+                minute: typeof ev.status?.clock === "number" ? Math.floor(ev.status.clock) : 0,
+                group: ev.status?.type?.detail || "Live Match",
+                venue: comp?.venue?.fullName || comp?.venue?.address?.city || "International Arena"
+              };
+            });
+            setActualLiveMatches(mapped);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not retrieve actual live football scores: ", err);
+      } finally {
+        if (active) {
+          setIsLoadingActualScores(false);
+        }
+      }
+    };
+
+    fetchActualLiveScores();
+    const interval = setInterval(fetchActualLiveScores, 25000);
+    return () => {
+      active = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -585,7 +675,7 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
   // Update clock simulation
   useEffect(() => {
     const clockInterval = setInterval(() => {
-      setCurrentTime(prev => new Date(prev.getTime() + 1000));
+      setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(clockInterval);
   }, []);
@@ -963,6 +1053,88 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
 
       {subTab === "living" && (
         <div className="space-y-6" id="living-fixtures-grid-panel">
+          
+          {/* Actual Soccer Match Live Scores */}
+          {actualLiveMatches.length > 0 && (
+            <div className="space-y-2 pb-2" id="actual-realworld-live-scores">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold tracking-widest text-[#a3e635] uppercase font-mono flex items-center gap-1.5 bg-lime-500/10 px-2.5 py-1 rounded border border-lime-500/15">
+                  <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+                  Actual Global Soccer Scores
+                </span>
+                <span className="text-[9px] text-zinc-400 font-mono">Real-time data from ESPN Global Feed</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {actualLiveMatches.map(match => (
+                  <div 
+                    key={match.id}
+                    className="bg-zinc-950/95 border border-zinc-900 rounded-2xl p-5 shadow-xl relative overflow-hidden"
+                  >
+                    {/* Top bar info */}
+                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 pb-3 border-b border-white/5">
+                      <span className="truncate max-w-[170px]">{match.group} • {match.venue}</span>
+                      {match.status === "LIVE" ? (
+                        <span className="flex items-center gap-1 text-red-500 font-black tracking-wider bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded uppercase font-mono text-[9px]">
+                          <span className="w-1 h-1 rounded-full bg-red-500 animate-ping" />
+                          {match.minute}' MIN
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 uppercase font-mono text-[9px] bg-white/5 px-2 py-0.5 rounded">
+                          {match.status}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Score row matches */}
+                    <div className="flex items-center justify-between py-4 text-center px-2">
+                      {/* Home team */}
+                      <div className="flex-1 flex flex-col items-center">
+                        {match.homeFlag ? (
+                          <img 
+                            src={match.homeFlag} 
+                            alt={match.homeTeam} 
+                            className="w-10 h-10 object-contain mb-1.5" 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        <span className="text-xs font-bold text-white tracking-tight text-center max-w-[110px] truncate">{match.homeTeam}</span>
+                      </div>
+
+                      {/* Numeric Score HUD */}
+                      <div className="flex flex-col items-center justify-center shrink-0 px-4">
+                        <div className="flex items-center gap-4 text-2xl font-black font-mono tracking-wider tabular-nums text-[#a3e635] bg-zinc-900 border border-white/5 py-1.5 px-4 rounded-xl shadow-inner min-w-[100px] justify-center font-mono">
+                          <span>{match.homeScore}</span>
+                          <span className={match.status === "LIVE" ? "text-lime-400 animate-pulse" : "text-zinc-650"}>:</span>
+                          <span>{match.awayScore}</span>
+                        </div>
+                        <span className="text-[9px] text-slate-400 font-mono mt-1.5 uppercase font-semibold">SCORE</span>
+                      </div>
+
+                      {/* Away team */}
+                      <div className="flex-1 flex flex-col items-center">
+                        {match.awayFlag ? (
+                          <img 
+                            src={match.awayFlag} 
+                            alt={match.awayTeam} 
+                            className="w-10 h-10 object-contain mb-1.5" 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        <span className="text-xs font-bold text-white tracking-tight text-center max-w-[110px] truncate">{match.awayTeam}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Active Live Score Item */}
           <div className="space-y-2">

@@ -107,6 +107,22 @@ export default function App() {
     }
   };
 
+  // Helper to dynamically set the 7th channel of Sports category as featured
+  const enhanceChannelsWithFeaturedSports = (channelsList: Channel[]): Channel[] => {
+    if (!channelsList || channelsList.length === 0) return channelsList;
+    const sportsList = channelsList.filter(c => c.category === "Sports");
+    let sports7thId: string | null = null;
+    if (sportsList.length >= 7) {
+      sports7thId = sportsList[6].id;
+    }
+    return channelsList.map(c => {
+      if (sports7thId && c.id === sports7thId) {
+        return { ...c, isFeatured: true };
+      }
+      return c;
+    });
+  };
+
   // 1. Fetch channels from server-side api with modern client-side fallback support for static hosting (Vercel)
   const fetchChannels = async (forceRefresh = false) => {
     try {
@@ -119,7 +135,7 @@ export default function App() {
         } catch (err) {
           console.warn("Backend refresh endpoint is unavailable, performing direct client-side fetch instead.");
           const clientChannels = await fetchChannelsClientSide(true);
-          setChannels(clientChannels);
+          setChannels(enhanceChannelsWithFeaturedSports(clientChannels));
           return;
         }
       } else {
@@ -132,7 +148,7 @@ export default function App() {
         if (resp.ok) {
           const resData = await resp.json();
           if (resData && resData.channels && Array.isArray(resData.channels)) {
-            setChannels(resData.channels);
+            setChannels(enhanceChannelsWithFeaturedSports(resData.channels));
             return;
           }
         }
@@ -141,7 +157,7 @@ export default function App() {
         console.warn("Express backend API /api/channels is unavailable or returned error. Falling back to direct client-side extraction.", srvError);
         // Direct browser fallback to raw channels to ensure continuous play in Vercel, Netlify, or static server setups
         const clientChannels = await fetchChannelsClientSide(forceRefresh);
-        setChannels(clientChannels);
+        setChannels(enhanceChannelsWithFeaturedSports(clientChannels));
       }
     } catch (e: any) {
       console.error("Critical: Both server-side API and client-side playlist extraction failed:", e);
@@ -236,8 +252,29 @@ export default function App() {
 
   useEffect(() => {
     if (!selectedChannel) {
+      setIsMiniPlayerActive(false);
       setIsTheaterMode(false);
     }
+  }, [selectedChannel]);
+
+  // 2.7 Scroll-triggered Picture-in-Picture: automatically float player when scrolling down
+  useEffect(() => {
+    if (!selectedChannel) {
+      setIsMiniPlayerActive(false);
+      return;
+    }
+
+    const handleScroll = () => {
+      // If user scrolls past 350px, float the player at bottom-right automatically
+      if (window.scrollY > 350) {
+        setIsMiniPlayerActive(true);
+      } else {
+        setIsMiniPlayerActive(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [selectedChannel]);
 
   // 3. Keep favorites in sync with local storage
@@ -389,7 +426,7 @@ export default function App() {
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
                   </span>
                   <span>
-                    {visitorCount.active}
+                    {visitorCount.active < 1000 ? `${visitorCount.active}K+` : `${(visitorCount.active / 1000).toFixed(1)}M+`}
                     <span className="hidden md:inline ml-1 text-[9px] text-rose-400/80 font-bold font-sans">
                       {t("liveViewers")}
                     </span>
@@ -400,7 +437,7 @@ export default function App() {
                 <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 text-slate-300 px-2.5 py-1 text-[10px] font-mono font-medium rounded-xl shadow-sm">
                   <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span className="font-bold">
-                    {visitorCount.total.toLocaleString()}
+                    {visitorCount.total < 1000 ? `${visitorCount.total}K+` : `${(visitorCount.total / 1000).toFixed(1)}K+`}
                     <span className="hidden md:inline ml-1 text-[9px] text-slate-500 font-medium font-sans">
                       {t("totalVisitors")}
                     </span>

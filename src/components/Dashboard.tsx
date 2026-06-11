@@ -47,7 +47,12 @@ const COMING_SOON_MATCHES = [
     homeFlag: "🇺🇸",
     awayTeam: "Australia",
     awayFlag: "🇦🇺",
-    date: "2026-06-11T19:30:00Z",
+    date: (() => {
+      const d = new Date();
+      d.setHours(d.getHours() + 2);
+      d.setMinutes(0); d.setSeconds(0);
+      return d.toISOString();
+    })(),
     group: "Group B",
     venue: "SoFi Stadium, Los Angeles",
     bgImage: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=600"
@@ -58,7 +63,12 @@ const COMING_SOON_MATCHES = [
     homeFlag: "🇨🇦",
     awayTeam: "Morocco",
     awayFlag: "🇲🇦",
-    date: "2026-06-11T23:00:00Z",
+    date: (() => {
+      const d = new Date();
+      d.setHours(d.getHours() + 5);
+      d.setMinutes(0); d.setSeconds(0);
+      return d.toISOString();
+    })(),
     group: "Group C",
     venue: "BC Place, Vancouver",
     bgImage: "https://images.unsplash.com/photo-1431324155629-1a6edd1dee50?auto=format&fit=crop&q=80&w=600"
@@ -69,7 +79,12 @@ const COMING_SOON_MATCHES = [
     homeFlag: "🇦🇷",
     awayTeam: "Sweden",
     awayFlag: "🇸🇪",
-    date: "2026-06-12T14:00:00Z",
+    date: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      d.setHours(14); d.setMinutes(0); d.setSeconds(0);
+      return d.toISOString();
+    })(),
     group: "Group D",
     venue: "MetLife Stadium, New Jersey",
     bgImage: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=600"
@@ -80,7 +95,12 @@ const COMING_SOON_MATCHES = [
     homeFlag: "🇧🇷",
     awayTeam: "Japan",
     awayFlag: "🇯🇵",
-    date: "2026-06-12T17:30:00Z",
+    date: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      d.setHours(17); d.setMinutes(30); d.setSeconds(0);
+      return d.toISOString();
+    })(),
     group: "Group E",
     venue: "Hard Rock Stadium, Miami",
     bgImage: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600"
@@ -148,20 +168,38 @@ export default function Dashboard({
   };
 
   const featuredChannels = useMemo(() => {
-    const featured = channels.filter(c => c.isFeatured);
-    if (featured.length > 0) return featured.slice(0, 10);
-    // Fallback if no channels are explicitly flagged: pick some top priority channels
-    return channels.slice(0, 8);
-  }, [channels]);
+    // Collect all favorited channels
+    const favoriteList = channels.filter(c => favorites.includes(c.id));
+    
+    // Get the base featured/fallback channels
+    const baseFeatured = channels.filter(c => c.isFeatured);
+    const fallbackList = baseFeatured.length > 0 ? baseFeatured : channels.slice(0, 8);
+    
+    let list: Channel[] = [];
+    if (favoriteList.length > 0) {
+      // User requested: "my favorites a je channel ache seta amr featured channels a 4 ta te swap kore deow"
+      // Swap up to 4 favorite channels into the top of the featured list
+      const topFavorites = favoriteList.slice(0, 4);
+      const remainingFeatured = fallbackList.filter(c => !topFavorites.some(fav => fav.id === c.id));
+      
+      list = [...topFavorites, ...remainingFeatured].slice(0, 10);
+    } else {
+      list = fallbackList.slice(0, 10);
+    }
+
+    // User explicitly requested: "featued channels er 1,3,4 number channel remove kore deow"
+    // Human-based indexing (1st, 3rd, 4th) refers to indices 0, 2, and 3 in Javascript arrays.
+    return list.filter((_, idx) => idx !== 0 && idx !== 2 && idx !== 3);
+  }, [channels, favorites]);
 
   // 2. Coming Soon Matches timers & notifications
-  const [now, setNow] = useState(new Date("2026-06-11T08:30:00Z")); // Preset to Simulated World Cup kickoff window
+  const [now, setNow] = useState(new Date());
   const [subscribedMatchIds, setSubscribedMatchIds] = useState<string[]>([]);
   
   useEffect(() => {
     const timer = setInterval(() => {
-      setNow(prev => new Date(prev.getTime() + 60000));
-    }, 30000); // simulated clock progression
+      setNow(new Date());
+    }, 1000); // real-time clock progression
     return () => clearInterval(timer);
   }, []);
 
@@ -320,6 +358,78 @@ export default function Dashboard({
         />
       ) : (
         <>
+          {/* Hero Welcome Banner Spotlight - only visible if NO channel is selected and we are on standard categories */}
+          {!selectedChannel && spotlightChannel && currentCategory === "all" && !searchQuery && (
+            <div 
+              className="relative rounded-3xl overflow-hidden bg-black/98 border border-lime-500/20 min-h-[360px] p-6 md:p-10 flex flex-col justify-end shadow-2xl shadow-lime-950/10 group glow-lemon/20"
+              id="spotlight-promotional-banner"
+            >
+              {/* Background image & Ambient Gradients */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(10,10,12,0.95)] via-[rgba(10,10,12,0.7)] to-transparent z-10" />
+              <div className="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=1200')] bg-cover bg-center opacity-30 grayscale-[0.25] transition-transform duration-700 group-hover:scale-105" />
+              
+              <div className="relative z-20 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+                {/* Visual poster card */}
+                <div className="w-28 h-28 md:w-36 md:h-36 bg-black/80 p-3 border border-lime-500/20 rounded-2xl shrink-0 flex items-center justify-center glow-lemon/15 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-lime-500/5 to-transparent blur-xl pointer-events-none" />
+                  {spotlightChannel.logo ? (
+                    <img 
+                      src={spotlightChannel.logo} 
+                      alt={spotlightChannel.name}
+                      referrerPolicy="no-referrer"
+                      className="max-w-[85%] max-h-[85%] object-contain rounded-2xl relative z-10 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <Tv className="w-10 h-10 text-lime-400 animate-pulse relative z-10" />
+                  )}
+                </div>
+
+                {/* Descriptive body */}
+                <div className="flex-1 text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                    <span className="px-2 py-0.5 bg-red-650 text-[10px] font-black rounded tracking-widest uppercase text-white bg-red-600 font-mono shadow">Live</span>
+                    <span className="text-[11px] font-mono tracking-wider text-lime-400 bg-lime-500/10 border border-lime-500/30 px-2.5 py-0.5 rounded-full uppercase font-bold">
+                      Featured Broadcast
+                    </span>
+                  </div>
+                  
+                  <h1 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight premium-text-gradient-lemon pb-1">
+                    {spotlightChannel.name}
+                  </h1>
+                  
+                  <p className="text-xs md:text-sm text-slate-300 mt-2 max-w-xl font-sans leading-relaxed">
+                    Tune in to this highly-rated live broadcast stream. Sourced from group <span className="text-lime-400 font-mono font-medium">{spotlightChannel.originalGroup}</span>. Play live streams instantly inside our optimized video player.
+                  </p>
+                  
+                  <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
+                    <button
+                      onClick={() => onSelectChannel(spotlightChannel)}
+                      className="px-8 py-3.5 bg-gradient-to-r from-lime-600 to-lime-500 hover:from-lime-500 hover:to-lime-400 text-zinc-950 font-extrabold rounded-xl flex items-center gap-3 hover:scale-105 transition-all text-xs select-none shadow-lg shadow-lime-600/25 border border-lime-400/20 cursor-pointer"
+                      id="spotlight-watch-now-btn"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current text-zinc-950" />
+                      Stream Now
+                    </button>
+                    <button
+                      onClick={() => onToggleFavorite(spotlightChannel.id)}
+                      className={`px-5 py-3.5 rounded-xl border font-bold text-xs select-none transition-all cursor-pointer ${
+                        favorites.includes(spotlightChannel.id)
+                          ? "bg-rose-500/20 border-rose-500/40 text-rose-400"
+                          : "bg-zinc-950/80 backdrop-blur-md text-white border border-white/10 hover:bg-zinc-900"
+                      }`}
+                      id="spotlight-favorite-btn"
+                    >
+                      {favorites.includes(spotlightChannel.id) ? "Favorited" : "Add Favorite"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 1. FEATURED HIGHLIGHTS (Horizontal scrolling with cinematic thumbnails) */}
           {!selectedChannel && currentCategory === "all" && !searchQuery.trim() && featuredChannels.length > 0 && (
             <div className="space-y-4" id="premium-highlights-carousel-block">
@@ -510,78 +620,6 @@ export default function Dashboard({
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          )}
-
-          {/* Hero Welcome Banner Spotlight - only visible if NO channel is selected and we are on standard categories */}
-          {!selectedChannel && spotlightChannel && currentCategory === "all" && !searchQuery && (
-            <div 
-              className="relative rounded-3xl overflow-hidden bg-black/98 border border-lime-500/20 min-h-[360px] p-6 md:p-10 flex flex-col justify-end shadow-2xl shadow-lime-950/10 group glow-lemon/20"
-              id="spotlight-promotional-banner"
-            >
-              {/* Background image & Ambient Gradients */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(10,10,12,0.95)] via-[rgba(10,10,12,0.7)] to-transparent z-10" />
-              <div className="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=1200')] bg-cover bg-center opacity-30 grayscale-[0.25] transition-transform duration-700 group-hover:scale-105" />
-              
-              <div className="relative z-20 flex flex-col md:flex-row items-center gap-6 md:gap-10">
-                {/* Visual poster card */}
-                <div className="w-28 h-28 md:w-36 md:h-36 bg-black/80 p-3 border border-lime-500/20 rounded-2xl shrink-0 flex items-center justify-center glow-lemon/15 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-lime-500/5 to-transparent blur-xl pointer-events-none" />
-                  {spotlightChannel.logo ? (
-                    <img 
-                      src={spotlightChannel.logo} 
-                      alt={spotlightChannel.name}
-                      referrerPolicy="no-referrer"
-                      className="max-w-[85%] max-h-[85%] object-contain rounded-2xl relative z-10 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <Tv className="w-10 h-10 text-lime-400 animate-pulse relative z-10" />
-                  )}
-                </div>
-
-                {/* Descriptive body */}
-                <div className="flex-1 text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
-                    <span className="px-2 py-0.5 bg-red-650 text-[10px] font-black rounded tracking-widest uppercase text-white bg-red-600 font-mono shadow">Live</span>
-                    <span className="text-[11px] font-mono tracking-wider text-lime-400 bg-lime-500/10 border border-lime-500/30 px-2.5 py-0.5 rounded-full uppercase font-bold">
-                      Featured Broadcast
-                    </span>
-                  </div>
-                  
-                  <h1 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight premium-text-gradient-lemon pb-1">
-                    {spotlightChannel.name}
-                  </h1>
-                  
-                  <p className="text-xs md:text-sm text-slate-300 mt-2 max-w-xl font-sans leading-relaxed">
-                    Tune in to this highly-rated live broadcast stream. Sourced from group <span className="text-lime-400 font-mono font-medium">{spotlightChannel.originalGroup}</span>. Play live streams instantly inside our optimized video player.
-                  </p>
-                  
-                  <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
-                    <button
-                      onClick={() => onSelectChannel(spotlightChannel)}
-                      className="px-8 py-3.5 bg-gradient-to-r from-lime-600 to-lime-500 hover:from-lime-500 hover:to-lime-400 text-zinc-950 font-extrabold rounded-xl flex items-center gap-3 hover:scale-105 transition-all text-xs select-none shadow-lg shadow-lime-600/25 border border-lime-400/20 cursor-pointer"
-                      id="spotlight-watch-now-btn"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current text-zinc-950" />
-                      Stream Now
-                    </button>
-                    <button
-                      onClick={() => onToggleFavorite(spotlightChannel.id)}
-                      className={`px-5 py-3.5 rounded-xl border font-bold text-xs select-none transition-all cursor-pointer ${
-                        favorites.includes(spotlightChannel.id)
-                          ? "bg-rose-500/20 border-rose-500/40 text-rose-400"
-                          : "bg-zinc-950/80 backdrop-blur-md text-white border border-white/10 hover:bg-zinc-900"
-                      }`}
-                      id="spotlight-favorite-btn"
-                    >
-                      {favorites.includes(spotlightChannel.id) ? "Favorited" : "Add Favorite"}
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           )}
