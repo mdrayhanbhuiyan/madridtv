@@ -76,7 +76,7 @@ function parseM3U(m3uContent: string): Channel[] {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
