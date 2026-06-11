@@ -248,19 +248,99 @@ async function startServer() {
   } else {
     // Try process.cwd()/dist, falling back to various directories depending on where Passenger starts the node app
     let distPath = path.join(process.cwd(), 'dist');
-    if (!fs.existsSync(path.join(distPath, 'index.html'))) {
-      if (fs.existsSync(path.join(__dirname, 'index.html'))) {
-        distPath = __dirname;
-      } else if (fs.existsSync(path.join(__dirname, '..', 'dist', 'index.html'))) {
-        distPath = path.join(__dirname, '..', 'dist');
-      } else if (fs.existsSync(path.join(process.cwd(), 'index.html'))) {
-        distPath = process.cwd();
+    const potentialPaths = [
+      path.join(process.cwd(), 'dist'),
+      path.join(__dirname),
+      path.join(__dirname, '..', 'dist'),
+      path.join(__dirname, 'dist'),
+      path.join(process.cwd())
+    ];
+
+    for (const p of potentialPaths) {
+      if (fs.existsSync(path.join(p, 'index.html'))) {
+        distPath = p;
+        break;
       }
     }
-    console.log(`[Production mode] Serving client static files from: ${distPath}`);
+    console.log(`[Production mode] Serving verified client static files from: ${distPath}`);
+
+    // Robust static asset middleware specifically crafted for cPanel Passenger sub-folder deployments
+    app.use((req, res, next) => {
+      const urlPath = req.path;
+      const isAsset = urlPath.includes('/assets/') || 
+                      urlPath.endsWith('.js') || 
+                      urlPath.endsWith('.css') || 
+                      urlPath.endsWith('.png') || 
+                      urlPath.endsWith('.jpg') || 
+                      urlPath.endsWith('.jpeg') || 
+                      urlPath.endsWith('.svg') || 
+                      urlPath.endsWith('.ico') || 
+                      urlPath.endsWith('.json') || 
+                      urlPath.endsWith('.webmanifest');
+
+      if (isAsset) {
+        const baseName = path.basename(urlPath);
+        const searchLocations = [
+          path.join(distPath, urlPath),
+          path.join(distPath, 'assets', baseName),
+          path.join(distPath, baseName),
+          path.join(process.cwd(), 'dist', 'assets', baseName)
+        ];
+
+        for (const loc of searchLocations) {
+          if (fs.existsSync(loc) && !fs.statSync(loc).isDirectory()) {
+            let contentType = "application/octet-stream";
+            if (baseName.endsWith(".js")) {
+              contentType = "application/javascript; charset=utf-8";
+            } else if (baseName.endsWith(".css")) {
+              contentType = "text/css; charset=utf-8";
+            } else if (baseName.endsWith(".png")) {
+              contentType = "image/png";
+            } else if (baseName.endsWith(".jpg") || baseName.endsWith(".jpeg")) {
+              contentType = "image/jpeg";
+            } else if (baseName.endsWith(".svg")) {
+              contentType = "image/svg+xml";
+            } else if (baseName.endsWith(".ico")) {
+              contentType = "image/x-icon";
+            } else if (baseName.endsWith(".json") || baseName.endsWith(".webmanifest")) {
+              contentType = "application/json; charset=utf-8";
+            }
+
+            res.setHeader("Content-Type", contentType);
+            return res.sendFile(loc);
+          }
+        }
+
+        // Avoid returning index.html for static assets which causes browser MIME-type "text/html" errors
+        console.warn(`[Static Asset 404] File not found: ${urlPath}`);
+        return res.status(404).send(`Asset not found: ${baseName}`);
+      }
+
+      next();
+    });
+
     app.use(express.static(distPath));
+
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      // Robust index.html resolution
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        // Fallback search in case of nested Passenger routing
+        let found = false;
+        for (const p of potentialPaths) {
+          const fallbackIndex = path.join(p, 'index.html');
+          if (fs.existsSync(fallbackIndex)) {
+            res.sendFile(fallbackIndex);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          res.status(404).send("Error: Production build dist/index.html not found! Please run 'npm run build' first.");
+        }
+      }
     });
   }
 

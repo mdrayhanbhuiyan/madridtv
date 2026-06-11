@@ -1,0 +1,25 @@
+{
+  "short_name": "MadridTV",
+  "name": "Madrid TV Live Players",
+  "description": "Sleek, premium, low-latency live IPTV player with advanced video filters, live viewer counter, and multi-language support.",
+  "icons": [
+    {
+      "src": "pwa-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "pwa-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "background_color": "#090d16",
+  "theme_color": "#020617",
+  "display": "standalone",
+  "orientation": "any",
+  "categories": ["entertainment", "utilities", "sports"]
+}
