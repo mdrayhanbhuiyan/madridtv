@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Channel } from "../types";
 import ChannelCard from "./ChannelCard";
+import FifaHub from "./FifaHub";
 
 interface DashboardProps {
   channels: Channel[];
@@ -42,6 +43,15 @@ export default function Dashboard({
   setSearchQuery
 }: DashboardProps) {
   const [showOnlyFeatured, setShowOnlyFeatured] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    // Auto clear notification after 5 seconds
+    setTimeout(() => {
+      setNotification((current) => current === msg ? null : current);
+    }, 5000);
+  };
 
   // Group channels by current category selection and search query
   const filteredChannels = useMemo(() => {
@@ -78,7 +88,15 @@ export default function Dashboard({
 
   // Determine a featured banner channel to highlight of the day
   const spotlightChannel = useMemo(() => {
-    // Pick first featured channel or a standard BTV/Somoy TV channel
+    // Select the 7th channel of "Sports Arena" (category: "Sports")
+    const sportsList = channels.filter(c => c.category === "Sports");
+    if (sportsList.length >= 7) {
+      return sportsList[6];
+    } else if (sportsList.length > 0) {
+      return sportsList[sportsList.length - 1];
+    }
+    
+    // Fallback: Pick first featured channel or a standard BTV/Somoy TV channel
     const featuredList = channels.filter(c => c.isFeatured);
     if (featuredList.length > 0) return featuredList[0];
     
@@ -150,172 +168,193 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Hero Welcome Banner Spotlight - only visible if NO channel is selected and we are on standard categories */}
-      {!selectedChannel && spotlightChannel && currentCategory === "all" && !searchQuery && (
-        <div 
-          className="relative rounded-3xl overflow-hidden bg-black/98 border border-lime-500/20 min-h-[360px] p-6 md:p-10 flex flex-col justify-end shadow-2xl shadow-lime-950/10 group glow-lemon/20"
-          id="spotlight-promotional-banner"
-        >
-          {/* Background image & Ambient Gradients */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(10,10,12,0.95)] via-[rgba(10,10,12,0.7)] to-transparent z-10" />
-          <div className="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=1200')] bg-cover bg-center opacity-30 grayscale-[0.25] transition-transform duration-700 group-hover:scale-105" />
-          
-          <div className="relative z-20 flex flex-col md:flex-row items-center gap-6 md:gap-10">
-            {/* Visual poster card */}
-            <div className="w-28 h-28 md:w-36 md:h-36 bg-black/80 p-3 border border-lime-500/20 rounded-2xl shrink-0 flex items-center justify-center glow-lemon/15 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-lime-500/5 to-transparent blur-xl pointer-events-none" />
-              {spotlightChannel.logo ? (
-                <img 
-                  src={spotlightChannel.logo} 
-                  alt={spotlightChannel.name}
-                  referrerPolicy="no-referrer"
-                  className="max-w-[85%] max-h-[85%] object-contain rounded-2xl relative z-10 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-              ) : (
-                <Tv className="w-10 h-10 text-lime-400 animate-pulse relative z-10" />
-              )}
-            </div>
-
-            {/* Descriptive body */}
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
-                <span className="px-2 py-0.5 bg-red-650 text-[10px] font-black rounded tracking-widest uppercase text-white bg-red-600 font-mono shadow">Live</span>
-                <span className="text-[11px] font-mono tracking-wider text-lime-400 bg-lime-500/10 border border-lime-500/30 px-2.5 py-0.5 rounded-full uppercase font-bold">
-                  Featured Broadcast
-                </span>
-              </div>
-              
-              <h1 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight premium-text-gradient-lemon pb-1">
-                {spotlightChannel.name}
-              </h1>
-              
-              <p className="text-xs md:text-sm text-slate-300 mt-2 max-w-xl font-sans leading-relaxed">
-                Tune in to this highly-rated live broadcast stream. Sourced from group <span className="text-lime-400 font-mono font-medium">{spotlightChannel.originalGroup}</span>. Play live streams instantly inside our optimized video player.
-              </p>
-              
-              <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
-                <button
-                  onClick={() => onSelectChannel(spotlightChannel)}
-                  className="px-8 py-3.5 bg-gradient-to-r from-lime-600 to-lime-500 hover:from-lime-500 hover:to-lime-400 text-zinc-950 font-extrabold rounded-xl flex items-center gap-3 hover:scale-105 transition-all text-xs select-none shadow-lg shadow-lime-600/25 border border-lime-400/20 cursor-pointer"
-                  id="spotlight-watch-now-btn"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current text-zinc-950" />
-                  Stream Now
-                </button>
-                <button
-                  onClick={() => onToggleFavorite(spotlightChannel.id)}
-                  className={`px-5 py-3.5 rounded-xl border font-bold text-xs select-none transition-all cursor-pointer ${
-                    favorites.includes(spotlightChannel.id)
-                      ? "bg-rose-500/20 border-rose-500/40 text-rose-400"
-                      : "bg-zinc-950/80 backdrop-blur-md text-white border border-white/10 hover:bg-zinc-900"
-                  }`}
-                  id="spotlight-favorite-btn"
-                >
-                  {favorites.includes(spotlightChannel.id) ? "Favorited" : "Add Favorite"}
-                </button>
-              </div>
-            </div>
+      {/* Floating notification alert */}
+      {notification && (
+        <div className="fixed bottom-6 left-6 z-[100] bg-zinc-950/95 border border-lime-500/40 text-slate-100 text-xs px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-slide-in font-sans leading-relaxed" style={{ maxWidth: "340px", boxShadow: "0 20px 40px -10px rgba(0,0,0,0.8)" }}>
+          <div className="w-6 h-6 rounded-full bg-lime-500/15 border border-lime-500/35 flex items-center justify-center text-lime-400 shrink-0 select-none animate-pulse">
+            🔔
           </div>
+          <span className="flex-1 text-[11px] font-medium leading-normal">{notification}</span>
+          <button onClick={() => setNotification(null)} className="text-slate-400 hover:text-white text-xs font-bold leading-none px-1">✕</button>
         </div>
       )}
 
-      {/* Recently Played Tray (Only visible if history features items and we are looking at standard screens) */}
-      {!selectedChannel && recentChannels.length > 0 && currentCategory === "all" && !searchQuery && (
-        <div id="recently-played-shelf" className="space-y-3">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-lime-500 animate-pulse" />
-            <span className="text-xs font-bold tracking-wider text-slate-400 uppercase font-mono">Resume Watching</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {recentChannels.map(rc => (
-              <div
-                key={`recent-${rc.id}`}
-                onClick={() => onSelectChannel(rc)}
-                className="flex items-center gap-3 bg-zinc-950/40 hover:bg-zinc-900/40 border border-white/5 rounded-xl p-2.5 cursor-pointer select-none transition-all group glow-hover-premium backdrop-blur-md"
-              >
-                <div className="w-10 h-10 bg-black/60 p-1 border border-white/5 rounded-lg shrink-0 flex items-center justify-center">
-                  {rc.logo ? (
+      {currentCategory === "fifa_2026" && !searchQuery.trim() ? (
+        <FifaHub 
+          channels={channels}
+          onSelectChannel={onSelectChannel}
+          onShowNotification={showNotification}
+        />
+      ) : (
+        <>
+          {/* Hero Welcome Banner Spotlight - only visible if NO channel is selected and we are on standard categories */}
+          {!selectedChannel && spotlightChannel && currentCategory === "all" && !searchQuery && (
+            <div 
+              className="relative rounded-3xl overflow-hidden bg-black/98 border border-lime-500/20 min-h-[360px] p-6 md:p-10 flex flex-col justify-end shadow-2xl shadow-lime-950/10 group glow-lemon/20"
+              id="spotlight-promotional-banner"
+            >
+              {/* Background image & Ambient Gradients */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(10,10,12,0.95)] via-[rgba(10,10,12,0.7)] to-transparent z-10" />
+              <div className="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=1200')] bg-cover bg-center opacity-30 grayscale-[0.25] transition-transform duration-700 group-hover:scale-105" />
+              
+              <div className="relative z-20 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+                {/* Visual poster card */}
+                <div className="w-28 h-28 md:w-36 md:h-36 bg-black/80 p-3 border border-lime-500/20 rounded-2xl shrink-0 flex items-center justify-center glow-lemon/15 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-lime-500/5 to-transparent blur-xl pointer-events-none" />
+                  {spotlightChannel.logo ? (
                     <img 
-                      src={rc.logo} 
-                      alt=""
+                      src={spotlightChannel.logo} 
+                      alt={spotlightChannel.name}
                       referrerPolicy="no-referrer"
-                      className="max-w-[85%] max-h-[85%] object-contain rounded-md"
+                      className="max-w-[85%] max-h-[85%] object-contain rounded-2xl relative z-10 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";
                       }}
                     />
                   ) : (
-                    <Tv className="w-4 h-4 text-slate-400" />
+                    <Tv className="w-10 h-10 text-lime-400 animate-pulse relative z-10" />
                   )}
                 </div>
-                <div className="truncate">
-                  <div className="text-xs font-semibold text-slate-200 group-hover:text-lime-400 transition-colors truncate">
-                    {rc.name}
+
+                {/* Descriptive body */}
+                <div className="flex-1 text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                    <span className="px-2 py-0.5 bg-red-650 text-[10px] font-black rounded tracking-widest uppercase text-white bg-red-600 font-mono shadow">Live</span>
+                    <span className="text-[11px] font-mono tracking-wider text-lime-400 bg-lime-500/10 border border-lime-500/30 px-2.5 py-0.5 rounded-full uppercase font-bold">
+                      Featured Broadcast
+                    </span>
                   </div>
-                  <span className="text-[9px] text-slate-400 truncate block font-mono uppercase bg-white/5 px-1 py-0.2 rounded mt-0.5 text-center">
-                    {rc.category}
-                  </span>
+                  
+                  <h1 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight premium-text-gradient-lemon pb-1">
+                    {spotlightChannel.name}
+                  </h1>
+                  
+                  <p className="text-xs md:text-sm text-slate-300 mt-2 max-w-xl font-sans leading-relaxed">
+                    Tune in to this highly-rated live broadcast stream. Sourced from group <span className="text-lime-400 font-mono font-medium">{spotlightChannel.originalGroup}</span>. Play live streams instantly inside our optimized video player.
+                  </p>
+                  
+                  <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
+                    <button
+                      onClick={() => onSelectChannel(spotlightChannel)}
+                      className="px-8 py-3.5 bg-gradient-to-r from-lime-600 to-lime-500 hover:from-lime-500 hover:to-lime-400 text-zinc-950 font-extrabold rounded-xl flex items-center gap-3 hover:scale-105 transition-all text-xs select-none shadow-lg shadow-lime-600/25 border border-lime-400/20 cursor-pointer"
+                      id="spotlight-watch-now-btn"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current text-zinc-950" />
+                      Stream Now
+                    </button>
+                    <button
+                      onClick={() => onToggleFavorite(spotlightChannel.id)}
+                      className={`px-5 py-3.5 rounded-xl border font-bold text-xs select-none transition-all cursor-pointer ${
+                        favorites.includes(spotlightChannel.id)
+                          ? "bg-rose-500/20 border-rose-500/40 text-rose-400"
+                          : "bg-zinc-950/80 backdrop-blur-md text-white border border-white/10 hover:bg-zinc-900"
+                      }`}
+                      id="spotlight-favorite-btn"
+                    >
+                      {favorites.includes(spotlightChannel.id) ? "Favorited" : "Add Favorite"}
+                    </button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* Main Grid Channel Index Panel */}
-      <div className="space-y-4" id="channels-main-grid-area">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3" id="grid-header">
-          <div className="flex items-center gap-2.5">
-            <Grid className="w-4.5 h-4.5 text-lime-500" />
-            <h2 className="text-sm font-bold tracking-wider text-slate-400 uppercase font-mono">
-              {currentCategory === "all" ? "Channel Directory" : `${currentCategory} Selection`}
-            </h2>
-          </div>
-          <span className="text-xs text-slate-500 font-mono font-medium">
-            Found {filteredChannels.length} channels
-          </span>
-        </div>
+          {/* Recently Played Tray (Only visible if history features items and we are looking at standard screens) */}
+          {!selectedChannel && recentChannels.length > 0 && currentCategory === "all" && !searchQuery && (
+            <div id="recently-played-shelf" className="space-y-3">
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-lime-500 animate-pulse" />
+                <span className="text-xs font-bold tracking-wider text-slate-400 uppercase font-mono">Resume Watching</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {recentChannels.map(rc => (
+                  <div
+                    key={`recent-${rc.id}`}
+                    onClick={() => onSelectChannel(rc)}
+                    className="flex items-center gap-3 bg-zinc-950/40 hover:bg-zinc-900/40 border border-white/5 rounded-xl p-2.5 cursor-pointer select-none transition-all group glow-hover-premium backdrop-blur-md"
+                  >
+                    <div className="w-10 h-10 bg-black/60 p-1 border border-white/5 rounded-lg shrink-0 flex items-center justify-center">
+                      {rc.logo ? (
+                        <img 
+                          src={rc.logo} 
+                          alt=""
+                          referrerPolicy="no-referrer"
+                          className="max-w-[85%] max-h-[85%] object-contain rounded-md"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <Tv className="w-4 h-4 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="truncate">
+                      <div className="text-xs font-semibold text-slate-200 group-hover:text-lime-400 transition-colors truncate">
+                        {rc.name}
+                      </div>
+                      <span className="text-[9px] text-slate-400 truncate block font-mono uppercase bg-white/5 px-1 py-0.2 rounded mt-0.5 text-center">
+                        {rc.category}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* Empty status message */}
-        {filteredChannels.length === 0 && (
-          <div className="flex flex-col items-center justify-center p-12 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl" id="grid-empty-container">
-            <Tv className="w-10 h-10 text-slate-600 animate-bounce mb-3" />
-            <p className="text-sm text-slate-400 font-semibold font-display">No Channels Found</p>
-            <p className="text-xs text-slate-500 max-w-sm mt-1">
-              Could not match any channel listings in <span className="font-mono text-slate-400 font-semibold uppercase">"{currentCategory}"</span> matching that query.
-            </p>
-            {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="mt-4 bg-white/10 hover:bg-white/20 text-white border border-white/10 px-4 py-2 rounded-xl text-xs font-semibold transition-all"
-                id="clear-search-btn"
-              >
-                Clear Search Query
-              </button>
+          {/* Main Grid Channel Index Panel */}
+          <div className="space-y-4" id="channels-main-grid-area">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3" id="grid-header">
+              <div className="flex items-center gap-2.5">
+                <Grid className="w-4.5 h-4.5 text-lime-500" />
+                <h2 className="text-sm font-bold tracking-wider text-slate-400 uppercase font-mono">
+                  {currentCategory === "all" ? "Channel Directory" : `${currentCategory} Selection`}
+                </h2>
+              </div>
+              <span className="text-xs text-slate-500 font-mono font-medium">
+                Found {filteredChannels.length} channels
+              </span>
+            </div>
+
+            {/* Empty status message */}
+            {filteredChannels.length === 0 && (
+              <div className="flex flex-col items-center justify-center p-12 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl" id="grid-empty-container">
+                <Tv className="w-10 h-10 text-slate-600 animate-bounce mb-3" />
+                <p className="text-sm text-slate-400 font-semibold font-display">No Channels Found</p>
+                <p className="text-xs text-slate-500 max-w-sm mt-1">
+                  Could not match any channel listings in <span className="font-mono text-slate-400 font-semibold uppercase">"{currentCategory}"</span> matching that query.
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="mt-4 bg-white/10 hover:bg-white/20 text-white border border-white/10 px-4 py-2 rounded-xl text-xs font-semibold transition-all"
+                    id="clear-search-btn"
+                  >
+                    Clear Search Query
+                  </button>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {/* Bento grid container layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5" id="bento-channel-grid">
-          {filteredChannels.map((channel) => (
-            <ChannelCard
-              key={channel.id}
-              channel={channel}
-              isActive={selectedChannel?.id === channel.id}
-              isFavorite={favorites.includes(channel.id)}
-              onSelect={() => onSelectChannel(channel)}
-              onToggleFavorite={(e) => {
-                e.stopPropagation();
-                onToggleFavorite(channel.id);
-              }}
-            />
-          ))}
-        </div>
-      </div>
+            {/* Bento grid container layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5" id="bento-channel-grid">
+              {filteredChannels.map((channel) => (
+                <ChannelCard
+                  key={channel.id}
+                  channel={channel}
+                  isActive={selectedChannel?.id === channel.id}
+                  isFavorite={favorites.includes(channel.id)}
+                  onSelect={() => onSelectChannel(channel)}
+                  onToggleFavorite={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(channel.id);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   );

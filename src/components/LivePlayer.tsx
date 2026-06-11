@@ -78,6 +78,30 @@ export default function LivePlayer({
   const [hudFeedback, setHudFeedback] = useState<string | null>(null);
   const hudTimeoutRef = useRef<any>(null);
 
+  // Interactive controls auto-hide management (Cinema view)
+  const [areControlsVisible, setAreControlsVisible] = useState(true);
+  const activityTimeoutRef = useRef<any>(null);
+
+  const resetActivityTimer = () => {
+    setAreControlsVisible(true);
+    if (activityTimeoutRef.current) {
+      clearTimeout(activityTimeoutRef.current);
+    }
+    
+    // Do not auto-hide controls if diagnostics panel or stats telemetry panel are open
+    if (isDiagnosticsOpen || isStatsActive) {
+      return;
+    }
+    
+    activityTimeoutRef.current = setTimeout(() => {
+      setAreControlsVisible(false);
+    }, 3000);
+  };
+
+  const handleUserActivity = () => {
+    resetActivityTimer();
+  };
+
   // Simulated metrics for Stats panel (updated periodically)
   const [simulatedBitrate, setSimulatedBitrate] = useState<string>("5.4 Mbps");
   const [simulatedFps, setSimulatedFps] = useState<number>(60);
@@ -109,6 +133,7 @@ export default function LivePlayer({
   const swipedRecentlyRef = useRef(false);
 
   const handlePlayerTouchStart = (e: React.TouchEvent) => {
+    handleUserActivity();
     if (e.touches.length !== 1) return;
     touchStartXRef.current = e.touches[0].clientX;
     touchStartYRef.current = e.touches[0].clientY;
@@ -118,6 +143,7 @@ export default function LivePlayer({
   };
 
   const handlePlayerTouchMove = (e: React.TouchEvent) => {
+    handleUserActivity();
     if (!isSwiping || e.touches.length !== 1) return;
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
@@ -143,6 +169,7 @@ export default function LivePlayer({
   };
 
   const handlePlayerTouchEnd = (e: React.TouchEvent) => {
+    handleUserActivity();
     if (!isSwiping) return;
     setIsSwiping(false);
 
@@ -212,6 +239,16 @@ export default function LivePlayer({
     return () => clearInterval(interval);
   }, [sleepMinutesRemaining]);
 
+  // Synchronize controls auto-hide setup on state updates
+  useEffect(() => {
+    resetActivityTimer();
+    return () => {
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+    };
+  }, [channel.url, isPlaying, isDiagnosticsOpen, isStatsActive]);
+
   // Facility 2: Real-time Stats telemetry alterations (makes the "Stats for Nerds" panel breathe live data!)
   useEffect(() => {
     const interval = setInterval(() => {
@@ -230,6 +267,8 @@ export default function LivePlayer({
       // Avoid intercepting triggers if typing in search feeds or sliders
       const activeTag = document.activeElement?.tagName.toLowerCase();
       if (activeTag === "input" || activeTag === "textarea") return;
+
+      handleUserActivity();
 
       const video = videoRef.current;
 
@@ -706,10 +745,20 @@ export default function LivePlayer({
       {/* Visual Canvas Player Area */}
       <div 
         ref={containerRef}
-        className="relative bg-black aspect-video w-full flex items-center justify-center group overflow-hidden" 
+        className={`relative bg-black aspect-video w-full flex items-center justify-center group overflow-hidden ${
+          areControlsVisible ? "cursor-default" : "cursor-none"
+        }`} 
         onTouchStart={handlePlayerTouchStart}
         onTouchMove={handlePlayerTouchMove}
         onTouchEnd={handlePlayerTouchEnd}
+        onMouseMove={handleUserActivity}
+        onMouseEnter={handleUserActivity}
+        onMouseLeave={() => {
+          if (activityTimeoutRef.current) clearTimeout(activityTimeoutRef.current);
+          activityTimeoutRef.current = setTimeout(() => {
+            setAreControlsVisible(false);
+          }, 500);
+        }}
         id="video-player-canvas-area"
       >
         <video
@@ -931,7 +980,12 @@ export default function LivePlayer({
 
         {/* Floating Quick Stats Overlays (Bottom corners of screen on hover) */}
         {!hasError && (
-          <div className="absolute top-4 right-4 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" id="player-live-overlay-stats">
+          <div 
+            className={`absolute top-4 right-4 z-10 flex gap-2 transition-opacity duration-300 pointer-events-none ${
+              areControlsVisible ? "opacity-100" : "opacity-0"
+            }`} 
+            id="player-live-overlay-stats"
+          >
             <span className="flex items-center gap-1.5 text-[9px] font-mono font-semibold tracking-wider text-red-500 bg-black/80 border border-red-500/30 px-2 line-clamp-1 py-1 rounded-md shadow-md">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 live-pulse"></span>
               LIVE
@@ -944,7 +998,12 @@ export default function LivePlayer({
 
         {/* Interactive Controls Overlay Bar */}
         {!hasError && (
-          <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-black to-black/0 px-4 md:px-6 flex items-center justify-between opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-10" id="player-hover-control-deck">
+          <div 
+            className={`absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-black to-black/0 px-4 md:px-6 flex items-center justify-between transition-opacity duration-300 z-10 ${
+              areControlsVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            }`} 
+            id="player-hover-control-deck"
+          >
             
             {/* Play/Pause controls */}
             <div className="flex items-center gap-2" id="controls-left-slot">

@@ -94,6 +94,7 @@ export default function Sidebar({
   const getCategoryCount = (category: string) => {
     if (category === "all") return channels.length;
     if (category === "featured") return channels.filter(c => c.isFeatured).length;
+    if (category === "fifa_2026") return "LIVE";
     if (category === "favorites") return favorites.length;
     if (category === "history") return history.length;
     return channels.filter(c => c.category === category).length;
@@ -102,6 +103,7 @@ export default function Sidebar({
   const navItems = [
     { id: "all", name: "All Channels", icon: Tv },
     { id: "featured", name: "Featured Channels", icon: Sparkles, color: "text-lime-400" },
+    { id: "fifa_2026", name: "FIFA World Cup 2026", icon: Trophy, color: "text-lime-400" },
     { id: "favorites", name: "My Favorites", icon: Heart, color: "text-rose-500" },
     { id: "history", name: "Watch History", icon: History, color: "text-blue-400" },
   ];
