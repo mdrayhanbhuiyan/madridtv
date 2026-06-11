@@ -681,7 +681,7 @@ export default function LivePlayer({
   }[aspectRatio];
 
   return (
-    <div className={`flex flex-col bg-black/85 backdrop-blur-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/80 transition-all duration-300 relative ${isMini ? "rounded-2xl" : "rounded-3xl"}`} id="live-player-container-root">
+    <div className={`flex flex-col bg-black/90 backdrop-blur-3xl overflow-hidden border border-orange-500/20 hover:border-orange-500/35 shadow-2xl shadow-black/90 transition-all duration-500 relative glow-hover-premium ${isMini ? "rounded-2xl shadow-orange-500/5 border-orange-500/30" : "rounded-3xl"}`} id="live-player-container-root">
       
       {/* Floating Mini Player Header */}
       {isMini && (
@@ -727,7 +727,7 @@ export default function LivePlayer({
 
         {/* HUD Hotkey OSD Toast Overlay */}
         {hudFeedback && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-45 bg-black/90 backdrop-blur-md border border-orange-500/40 text-orange-400 font-mono text-[10px] font-extrabold px-3.5 py-2.5 rounded-xl flex items-center gap-2 shadow-2xl pointer-events-none animate-slide-in select-none" id="hud-osd-feedback-overlay">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-45 bg-black/95 backdrop-blur-2xl border border-orange-500/50 text-orange-400 font-mono text-[10px] font-extrabold px-3.5 py-2.5 rounded-xl flex items-center gap-2 shadow-2xl pointer-events-none animate-slide-in select-none glow-orange" id="hud-osd-feedback-overlay">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
             <span className="uppercase tracking-widest">{hudFeedback}</span>
           </div>
@@ -735,10 +735,10 @@ export default function LivePlayer({
 
         {/* Advanced "Stats for Nerds" telemetry overlay */}
         {isStatsActive && (
-          <div className="absolute top-4 left-4 z-40 bg-zinc-950/95 backdrop-blur-md border border-white/10 p-3 rounded-xl font-mono text-[10px] text-slate-300 pointer-events-auto w-60 shadow-2xl select-none" id="stats-telemetry-box">
-            <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2 gap-3">
+          <div className="absolute top-4 left-4 z-40 bg-zinc-950/90 backdrop-blur-2xl border border-white/5 p-4 rounded-2xl font-mono text-[10px] text-slate-300 pointer-events-auto w-64 shadow-2xl select-none" id="stats-telemetry-box">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2 gap-3">
               <span className="text-orange-400 font-extrabold flex items-center gap-1.5 uppercase tracking-wide">
-                <Activity className="w-3.5 h-3.5 text-orange-500 animate-pulse" /> Telemetry Info
+                <Activity className="w-3.5 h-3.5 text-orange-550 animate-pulse" /> Telemetry Info
               </span>
               <button 
                 onClick={() => setIsStatsActive(false)}
@@ -765,7 +765,7 @@ export default function LivePlayer({
             {/* Swiping Right -> previous channel */}
             {swipeDelta > 0 && onPrevChannel && (
               <div 
-                className="absolute left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 bg-black/80 backdrop-blur-md border border-white/10 px-4 py-3 rounded-2xl pointer-events-none transition-all duration-150" 
+                className="absolute left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 bg-black/90 backdrop-blur-xl border border-orange-500/25 px-4 py-3 rounded-2xl pointer-events-none transition-all duration-150 glow-orange/15" 
                 style={{ 
                   opacity: Math.min(Math.abs(swipeDelta) / 60, 0.95), 
                   transform: `translateY(-50%) scale(${Math.min(0.85 + Math.abs(swipeDelta) / 300, 1.15)})` 
@@ -779,7 +779,7 @@ export default function LivePlayer({
             {/* Swiping Left -> next channel */}
             {swipeDelta < 0 && onNextChannel && (
               <div 
-                className="absolute right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 bg-black/80 backdrop-blur-md border border-white/10 px-4 py-3 rounded-2xl pointer-events-none transition-all duration-150"
+                className="absolute right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 bg-black/90 backdrop-blur-xl border border-orange-500/25 px-4 py-3 rounded-2xl pointer-events-none transition-all duration-150 glow-orange/15"
                 style={{ 
                   opacity: Math.min(Math.abs(swipeDelta) / 60, 0.95), 
                   transform: `translateY(-50%) scale(${Math.min(0.85 + Math.abs(swipeDelta) / 300, 1.15)})` 
@@ -794,15 +794,15 @@ export default function LivePlayer({
 
         {/* Dynamic speedometer connection diagnostic overlay */}
         {isDiagnosticsOpen && (
-          <div className="absolute inset-0 bg-black/95 z-45 flex flex-col items-center justify-center p-6 text-center select-none animate-fade-in pointer-events-auto rounded-t-2xl" id="diagnostics-panel-overlay">
-            <div className="max-w-md w-full bg-zinc-900 border border-white/10 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-3xl z-45 flex flex-col items-center justify-center p-6 text-center select-none animate-fade-in pointer-events-auto rounded-t-2xl" id="diagnostics-panel-overlay">
+            <div className="max-w-md w-full bg-zinc-950/90 border border-orange-500/30 rounded-2xl p-6 relative overflow-hidden shadow-2xl glow-orange/20">
               {/* Retro speed sweep background aura */}
-              <div className="absolute -top-24 -left-20 w-48 h-48 bg-orange-500/10 blur-3xl pointer-events-none rounded-full" />
-              <div className="absolute -bottom-24 -right-20 w-48 h-48 bg-emerald-500/10 blur-3xl pointer-events-none rounded-full" />
+              <div className="absolute -top-24 -left-20 w-48 h-48 bg-orange-500/15 blur-3xl pointer-events-none rounded-full" />
+              <div className="absolute -bottom-24 -right-20 w-48 h-48 bg-emerald-500/15 blur-3xl pointer-events-none rounded-full" />
 
               <button 
                 onClick={() => setIsDiagnosticsOpen(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors text-sm font-bold w-6 h-6 rounded-full bg-black/20 hover:bg-white/15 flex items-center justify-center border border-white/5"
+                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors text-sm font-bold w-6 h-6 rounded-full bg-black/40 hover:bg-white/15 flex items-center justify-center border border-white/5"
                 title="Exit Diagnostics"
               >
                 ✕
@@ -822,7 +822,7 @@ export default function LivePlayer({
                 </div>
 
                 {/* Main diagnostic display */}
-                <div className="w-full bg-black/45 rounded-xl border border-white/5 p-4 space-y-3 font-mono text-[11px] text-slate-300">
+                <div className="w-full bg-black/60 rounded-xl border border-white/5 p-4 space-y-3 font-mono text-[11px] text-slate-300">
                   <div className="flex justify-between items-center border-b border-white/5 pb-2">
                     <span className="text-slate-500 text-left">Node Latency:</span>
                     <span className="font-bold text-white">
@@ -1173,7 +1173,7 @@ export default function LivePlayer({
 
       {/* Dynamic Network Accelerator & Latency Tuning Bar (Netspeed Booster / Diagnostics) */}
       {!isMini && (
-        <div className="px-4 py-3 md:px-6 bg-orange-950/10 border-t border-white/5 flex flex-wrap items-center justify-between gap-y-2.5 gap-x-6 text-[11px] font-sans" id="connection-booster-tuner-bar">
+        <div className="px-4 py-3 md:px-6 bg-zinc-950/50 backdrop-blur-2xl border-t border-white/5 flex flex-wrap items-center justify-between gap-y-2.5 gap-x-6 text-[11px] font-sans" id="connection-booster-tuner-bar">
           <div className="flex items-center gap-2" id="speed-booster-selection-deck">
             <span className="text-orange-400 font-mono flex items-center gap-1 text-[10px] font-bold">
               <Zap className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
@@ -1191,10 +1191,10 @@ export default function LivePlayer({
                     setBufferMode(preset.id as any);
                     showHotkeyFeedback(`Net Optimizer: ${preset.name}`);
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-[9px] font-mono tracking-wider transition-all duration-150 uppercase font-semibold flex items-center gap-1 border ${
+                  className={`px-2.5 py-1 rounded-lg text-[9px] font-mono tracking-wider transition-all duration-150 uppercase font-semibold flex items-center gap-1 border cursor-pointer ${
                     bufferMode === preset.id
-                      ? "bg-orange-500 text-white border-orange-400 shadow shadow-orange-500/20"
-                      : "bg-black/20 border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
+                      ? "bg-gradient-to-r from-orange-600 to-orange-500 text-white border-orange-400 shadow shadow-orange-500/30 glow-orange"
+                      : "bg-black/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
                   }`}
                   title={preset.desc}
                 >
@@ -1207,13 +1207,13 @@ export default function LivePlayer({
 
           <div className="flex items-center gap-2.5 flex-wrap" id="speedometer-status-deck">
             <span className="text-slate-500 font-mono text-[10px] flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${bufferMode === "speed-booster" ? "bg-orange-400 animate-pulse" : (bufferMode === "stable-hd" ? "bg-cyan-400 animate-pulse" : "bg-emerald-400")}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${bufferMode === "speed-booster" ? "bg-orange-400 animate-pulse" : (bufferMode === "stable-hd" ? "bg-cyan-400 animate-pulse" : "bg-emerald-450 bg-emerald-400")}`} />
               LATENCY STATUS: <span className="text-slate-300 font-bold uppercase">{bufferMode === "speed-booster" ? "Fast Start (1.2s)" : (bufferMode === "stable-hd" ? "Buffered (HD)" : latencyInfo)}</span>
             </span>
 
             <button
               onClick={() => setIsDiagnosticsOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-orange-500/20 bg-orange-950/30 hover:bg-orange-600/20 text-orange-400 font-semibold text-[10px] font-mono hover:text-orange-300 transition-all uppercase shadow"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-orange-500/30 bg-orange-950/40 hover:bg-orange-600/30 text-orange-400 font-semibold text-[10px] font-mono hover:text-orange-300 transition-all uppercase shadow cursor-pointer glow-orange/10"
               title="Run Speed Jitter & Buffer Optimizer Diagnostics"
               id="speedometer-test-trigger"
             >
@@ -1226,7 +1226,7 @@ export default function LivePlayer({
 
       {/* Stream Info Metadata Header plate */}
       {!isMini && (
-        <div className="p-4 md:p-6 bg-black/20 border-t border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4" id="player-banner-metadata">
+        <div className="p-4 md:p-6 bg-zinc-950/60 backdrop-blur-2xl border-t border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl" id="player-banner-metadata">
         
         <div className="flex items-start gap-3.5" id="player-desc-subcontainer">
           {/* Circular logo */}

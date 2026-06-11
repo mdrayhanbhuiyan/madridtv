@@ -124,7 +124,9 @@ export default function Sidebar({
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-black/40 backdrop-blur-xl border-r border-white/10 text-slate-100 font-sans" id="iptv-sidebar">
+    <div className="flex flex-col h-full bg-zinc-950/60 backdrop-blur-2xl border-r border-white/5 text-slate-100 font-sans shadow-2xl relative overflow-hidden" id="iptv-sidebar">
+      {/* Top ambient luxury background aura */}
+      <div className="absolute top-0 left-0 w-32 h-32 bg-orange-500/5 blur-3xl pointer-events-none rounded-full" />
       {/* Sidebar Header */}
       <div className="flex items-center justify-between px-6 py-7 border-b border-white/10" id="sidebar-header">
         <div className="flex items-center gap-3">
@@ -159,18 +161,18 @@ export default function Sidebar({
                 <li key={item.id}>
                   <button
                     onClick={() => handleCategorySelect(item.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-sm ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-sm cursor-pointer ${
                       isActive 
-                        ? 'bg-white/10 text-orange-400 font-semibold' 
-                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                        ? 'bg-white/10 text-orange-400 font-bold border border-orange-500/25 shadow-md glow-orange/10' 
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon className={`w-4 h-4 ${isActive ? 'text-orange-400' : 'text-slate-400 group-hover:text-white'}`} />
                       <span>{item.name}</span>
                     </div>
-                    <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
-                      isActive ? 'bg-orange-500/20 text-orange-400 font-bold' : 'bg-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-gray-300'
+                    <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg border transition-all ${
+                      isActive ? 'bg-orange-500/30 border-orange-500/40 text-orange-300 font-black' : 'bg-white/5 border-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-gray-300'
                     }`}>
                       {count}
                     </span>
@@ -195,18 +197,18 @@ export default function Sidebar({
                 <li key={cat.id}>
                   <button
                     onClick={() => handleCategorySelect(cat.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-sm ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-sm cursor-pointer ${
                       isActive 
-                        ? 'bg-white/10 text-orange-400 font-semibold' 
-                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                        ? 'bg-white/10 text-orange-400 font-bold border border-orange-500/25 shadow-md glow-orange/10' 
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon className={`w-4 h-4 ${isActive ? 'text-orange-400' : 'text-slate-400 group-hover:text-white'}`} />
                       <span>{cat.name}</span>
                     </div>
-                    <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
-                      isActive ? 'bg-orange-500/20 text-orange-400 font-bold' : 'bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-gray-300'
+                    <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg border transition-all ${
+                      isActive ? 'bg-orange-500/30 border-orange-500/40 text-orange-300 font-black' : 'bg-white/5 border-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-gray-300'
                     }`}>
                       {count}
                     </span>
@@ -219,11 +221,15 @@ export default function Sidebar({
       </div>
 
       {/* Premium Lifetime Feature Panel */}
-      <div className="p-4 mx-3 mb-2 bg-gradient-to-br from-orange-600/15 to-transparent border border-orange-500/20 rounded-2xl">
-        <p className="text-[10px] text-orange-400 font-bold uppercase tracking-widest mb-1 font-mono">Active Plan</p>
-        <p className="text-xs font-semibold text-white font-display">Premium Lifetime Access</p>
-        <div className="mt-2.5 h-1 w-full bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full w-full bg-orange-500 rounded-full"></div>
+      <div className="p-4 mx-3 mb-2 bg-gradient-to-br from-orange-500/10 via-orange-950/20 to-black/40 border border-orange-500/25 rounded-2xl shadow-xl glow-orange/15 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/10 blur-2xl pointer-events-none rounded-full" />
+        <p className="text-[9px] text-orange-400 font-bold uppercase tracking-widest mb-1 font-mono">Active Privilege</p>
+        <p className="text-xs font-bold text-white font-sans flex items-center gap-1.5 uppercase tracking-wide">
+          <Sparkles className="w-3.5 h-3.5 text-orange-500 fill-current animate-pulse" />
+          <span>Premium Lifetime Access</span>
+        </p>
+        <div className="mt-3 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+          <div className="h-full w-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full animate-pulse"></div>
         </div>
       </div>
 

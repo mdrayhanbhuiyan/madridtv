@@ -88,17 +88,17 @@ export default function ChannelCard({
   return (
     <div 
       onClick={onSelect}
-      className={`group relative overflow-hidden bg-white/5 border rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:bg-white/10 ${
+      className={`group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1.5 border backdrop-blur-xl ${
         isActive 
-          ? "border-orange-500 shadow-lg shadow-orange-950/20 bg-white/10" 
-          : "border-white/10 hover:border-orange-500/50 bg-white/5"
+          ? "bg-zinc-950/80 glow-active-premium border-orange-500" 
+          : "bg-zinc-950/40 border-white/5 hover:bg-zinc-900/40 glow-hover-premium hover:border-orange-500/20"
       }`}
       id={`channel-card-${channel.id}`}
     >
       {/* Featured Accent Corner Tag */}
       {channel.isFeatured && (
-        <div className="absolute top-3 left-3 z-20 bg-orange-500 text-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md flex items-center gap-1 font-mono shadow-md backdrop-blur-md">
-          <Star className="w-2.5 h-2.5 fill-current animate-pulse" />
+        <div className="absolute top-3 left-3 z-20 bg-orange-600/90 text-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md flex items-center gap-1 font-mono shadow-md backdrop-blur-lg border border-orange-400/25">
+          <Star className="w-2.5 h-2.5 fill-current animate-pulse text-amber-300" />
           <span>Featured</span>
         </div>
       )}
@@ -118,7 +118,7 @@ export default function ChannelCard({
         )}
 
         {/* Outer overlay visual depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-transparent to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/10 to-transparent z-10" />
 
         {/* Channel Logo or Centered Graphic */}
         <div className="relative z-10 px-4 py-2 flex items-center justify-center w-full h-full max-h-[70%]">
@@ -127,7 +127,7 @@ export default function ChannelCard({
               src={channel.logo}
               alt={channel.name}
               referrerPolicy="no-referrer"
-              className="max-w-[70%] max-h-16 object-contain rounded-lg filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] transform transition-transform duration-500 group-hover:scale-110"
+              className="max-w-[70%] max-h-16 object-contain rounded-lg filter drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] transform transition-transform duration-500 group-hover:scale-110"
               onError={() => setImageFailed(true)}
             />
           ) : (
@@ -138,8 +138,8 @@ export default function ChannelCard({
         </div>
 
         {/* Play Button Overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15 flex items-center justify-center">
-          <div className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg shadow-orange-950/40">
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15 flex items-center justify-center backdrop-blur-[2px]">
+          <div className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center scale-75 group-hover:scale-100 transition-all duration-300 shadow-xl shadow-orange-500/40 border border-orange-450">
             <Play className="w-5 h-5 fill-current ml-0.5" />
           </div>
         </div>
@@ -147,13 +147,13 @@ export default function ChannelCard({
         {/* Badge: Live Indicator */}
         <div className="absolute bottom-2.5 left-3 z-15 flex items-center gap-1.5">
           {isActive ? (
-            <span className="flex items-center gap-1.5 text-[9px] font-bold text-red-500 font-mono bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20 backdrop-blur-md">
+            <span className="flex items-center gap-1.5 text-[9px] font-bold text-red-400 font-mono bg-red-950/60 px-2 py-0.5 rounded-md border border-red-500/40 backdrop-blur-xl">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 live-pulse animate-ping"></span>
               LIVE PLAYER
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400 font-mono bg-black/40 px-2 py-0.5 rounded-md border border-white/5 backdrop-blur-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+            <span className="flex items-center gap-1 text-[9px] font-bold text-slate-300 font-mono bg-black/60 px-2 py-0.5 rounded-md border border-white/5 backdrop-blur-xl">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-450 bg-slate-400"></span>
               STREAM READY
             </span>
           )}
@@ -161,13 +161,13 @@ export default function ChannelCard({
       </div>
 
       {/* Bottom Profile Details Panel */}
-      <div className="p-4 flex flex-col justify-between gap-3 bg-zinc-950/30">
+      <div className="p-4 flex flex-col justify-between gap-3 bg-zinc-950/60 backdrop-blur-md">
         <div>
           <h3 className="text-sm font-bold text-white tracking-tight line-clamp-1 font-sans group-hover:text-orange-400 transition-colors">
             {channel.name}
           </h3>
           <div className="flex items-center gap-2 mt-1.5">
-            <span className={`text-[9.5px] font-mono font-semibold tracking-wider px-2 py-0.5 rounded-md uppercase border ${getCategoryBadgeStyles(channel.category)}`}>
+            <span className={`text-[9.5px] font-mono font-semibold tracking-wider px-2 py-0.5 rounded-md uppercase border backdrop-blur-md ${getCategoryBadgeStyles(channel.category)}`}>
               {channel.category}
             </span>
           </div>
@@ -175,7 +175,7 @@ export default function ChannelCard({
 
         {/* Footer Info Area */}
         <div className="flex items-center justify-between border-t border-white/5 pt-2.5">
-          <span className="text-[10px] text-slate-500 font-mono truncate max-w-[130px]" title={channel.originalGroup}>
+          <span className="text-[10px] text-slate-400 font-mono truncate max-w-[130px]" title={channel.originalGroup}>
             {channel.originalGroup || "Live Broadcast"}
           </span>
           
@@ -184,8 +184,8 @@ export default function ChannelCard({
             aria-label="Toggle Favorite"
             className={`p-1.5 rounded-lg border transition-all duration-200 ${
               isFavorite 
-                ? "bg-rose-500/10 border-rose-500/30 text-rose-500 hover:bg-rose-500/20" 
-                : "bg-black/30 border-white/5 text-slate-500 hover:text-rose-400 hover:border-slate-700 hover:bg-white/5"
+                ? "bg-rose-500/15 border-rose-500/40 text-rose-400 hover:bg-rose-500/25" 
+                : "bg-black/50 border-white/5 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 hover:bg-white/5"
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${isFavorite ? "fill-current" : ""}`} />
