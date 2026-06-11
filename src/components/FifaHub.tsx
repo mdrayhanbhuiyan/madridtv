@@ -164,6 +164,114 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
 
   // Notifications subscribed list
   const [subscribedMatchIds, setSubscribedMatchIds] = useState<string[]>([]);
+
+  // Browser Notifications Permission State
+  const [notiPermission, setNotiPermission] = useState<"default" | "granted" | "denied">("default");
+
+  // Favorite teams tracking
+  const [favoriteTeams, setFavoriteTeams] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("fifa_favs_teams");
+      return saved ? JSON.parse(saved) : ["Mexico", "United States"];
+    } catch {
+      return ["Mexico", "United States"];
+    }
+  });
+
+  // Track the notified matches to avoid duplicate kickoff alerts
+  const [kickoffNotifiedIds, setKickoffNotifiedIds] = useState<string[]>([]);
+
+  // Update permission status on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotiPermission(Notification.permission);
+    }
+  }, []);
+
+  // Save favorites to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("fifa_favs_teams", JSON.stringify(favoriteTeams));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [favoriteTeams]);
+
+  // Direct Native Browser Push Dispatcher with Visual Fallback
+  const dispatchNotification = (title: string, body: string, isUrgent = false) => {
+    // 1. Browser Native Alert
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        try {
+          new Notification(title, {
+            body,
+            icon: "https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&w=128&h=128&q=80", // beautiful soccer field badge representation image
+            tag: `fifa-${Date.now()}`
+          });
+        } catch (e) {
+          console.warn("HTML5 Notification failed to dispatch directly", e);
+        }
+      }
+    }
+
+    // 2. Custom elegant in-app alert fallback/banner (via original onShowNotification prop)
+    onShowNotification(`${isUrgent ? "🚨 " : "🔔 "}${title}: ${body}`);
+  };
+
+  const handleRequestPermission = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      onShowNotification("⚠️ Browser notifications are not supported on your current browser terminal client.");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotiPermission(permission);
+      if (permission === "granted") {
+        dispatchNotification(
+          "🎉 Browser Push Alerts Enabled!",
+          "Excellent! You will now receive instant push live notifications when goals are scored or matches kick off.",
+          true
+        );
+      } else if (permission === "denied") {
+        onShowNotification("⚠️ Notification permission was blocked. Please reset site permissions in your address bar to enable push notifications.");
+      }
+    } catch (e) {
+      // In older browser versions requestPermission is callback-based
+      Notification.requestPermission((permission) => {
+        setNotiPermission(permission);
+        if (permission === "granted") {
+          dispatchNotification(
+            "🎉 Browser Push Alerts Enabled!",
+            "Excellent! You will now receive instant push live notifications when goals are scored or matches kick off.",
+            true
+          );
+        }
+      });
+    }
+  };
+
+  // Toggle favorite country team
+  const handleToggleFavoriteTeam = (teamName: string) => {
+    setFavoriteTeams(prev => {
+      const isFav = prev.includes(teamName);
+      if (isFav) {
+        onShowNotification(`Removed ${teamName} from followed teams.`);
+        return prev.filter(t => t !== teamName);
+      } else {
+        onShowNotification(`Favorite squad set: ${teamName}! You will receive real-time push alerts of kickoff & goals.`);
+        return [...prev, teamName];
+      }
+    });
+  };
+
+  const handleTriggerTestNotification = () => {
+    dispatchNotification(
+      "⚽ TEST GOAL! Mexico [3] - 1 South Africa",
+      "Goal scored by Lozano Jr. in the 81st minute with a spectacular curving free kick! (Diagnostics Active!)",
+      true
+    );
+  };
   
   // Real-time ticking time to calculate countdown
   const [currentTime, setCurrentTime] = useState<Date>(new Date("2026-06-11T07:52:20Z"));
@@ -367,16 +475,112 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
     matches.forEach(match => {
       const prev = prevMatchesRef.current.find(m => m.id === match.id);
       if (prev) {
-        if (match.homeScore !== undefined && prev.homeScore !== undefined && match.homeScore > prev.homeScore) {
-          onShowNotification(`⚽ GOOOOOAL for ${match.homeTeam}! Score is now ${match.homeScore}-${match.awayScore}!`);
-        } else if (match.awayScore !== undefined && prev.awayScore !== undefined && match.awayScore > prev.awayScore) {
-          onShowNotification(`⚽ GOOOOOAL for ${match.awayTeam}! Score is now ${match.homeScore}-${match.awayScore}!`);
+        const hasHomeGoal = match.homeScore !== undefined && prev.homeScore !== undefined && match.homeScore > prev.homeScore;
+        const hasAwayGoal = match.awayScore !== undefined && prev.awayScore !== undefined && match.awayScore > prev.awayScore;
+        
+        if (hasHomeGoal || hasAwayGoal) {
+          const scoringTeam = hasHomeGoal ? match.homeTeam : match.awayTeam;
+          const scoringFlag = hasHomeGoal ? match.homeFlag : match.awayFlag;
+          const isFavoriteTeam = favoriteTeams.includes(match.homeTeam) || favoriteTeams.includes(match.awayTeam);
+          const isSubscribed = subscribedMatchIds.includes(match.id);
+          
+          let title = `⚽ GOAL SCORED! ${scoringFlag} ${scoringTeam}`;
+          let body = `${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam}`;
+          
+          if (isFavoriteTeam) {
+            title = `🔥 FAVORITE TEAM SCORED! ${scoringFlag} ${scoringTeam}`;
+            body = `🎯 YES! Your favorite team scored! Current Score: ${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam} (${match.minute}')`;
+          } else if (isSubscribed) {
+            title = `🔔 GOAL ALERT! (Subscribed Match) ${scoringFlag} ${scoringTeam}`;
+            body = `Current Score: ${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam} (${match.minute}')`;
+          }
+
+          dispatchNotification(title, body, true);
         }
       }
     });
     // Sync the reference
     prevMatchesRef.current = matches;
-  }, [matches, onShowNotification]);
+  }, [matches, favoriteTeams, subscribedMatchIds]);
+
+  // Monitor upcoming matches countdown for kickoff & do automatic transitions
+  useEffect(() => {
+    matches.forEach(match => {
+      if (match.status === "UPCOMING") {
+        const matchTime = new Date(match.date).getTime();
+        const nowTime = currentTime.getTime();
+        
+        // Auto kickoff if current simulated time passes or matches the fixture kickoff time
+        if (nowTime >= matchTime && !kickoffNotifiedIds.includes(match.id)) {
+          setKickoffNotifiedIds(prev => [...prev, match.id]);
+          
+          setMatches(prevMatches => prevMatches.map(m => {
+            if (m.id === match.id) {
+              return {
+                ...m,
+                status: "LIVE",
+                homeScore: 0,
+                awayScore: 0,
+                minute: 1,
+                scorers: ""
+              };
+            }
+            return m;
+          }));
+
+          const isFavorite = favoriteTeams.includes(match.homeTeam) || favoriteTeams.includes(match.awayTeam);
+          const title = isFavorite 
+            ? `🦁 FAVORITE SQUAD KICKOFF! ${match.homeFlag} vs ${match.awayFlag}`
+            : `🏟️ WORLD CUP FIXTURE STARTED! ${match.homeFlag} vs ${match.awayFlag}`;
+          
+          const body = `${match.homeTeam} vs ${match.awayTeam} kicks off now inside ${match.venue}! Follow real-time goals and metrics instantly.`;
+          
+          dispatchNotification(title, body, true);
+        }
+      }
+    });
+  }, [currentTime, matches, kickoffNotifiedIds, favoriteTeams]);
+
+  // Handle Manual Simulator kickoff for immediate user demonstration
+  const handleSimulateKickoff = (fixtureId: string) => {
+    const targetMatch = matches.find(m => m.id === fixtureId);
+    if (!targetMatch) return;
+
+    const isFavorite = favoriteTeams.includes(targetMatch.homeTeam) || favoriteTeams.includes(targetMatch.awayTeam);
+    const title = isFavorite
+      ? `🦁 FAVORITE SQUAD KICKOFF! ${targetMatch.homeFlag} vs ${targetMatch.awayFlag}`
+      : `🏟️ WORLD CUP FIXTURE STARTED! ${targetMatch.homeFlag} vs ${targetMatch.awayFlag}`;
+    
+    const body = `${targetMatch.homeTeam} vs ${targetMatch.awayTeam} kicks off now inside ${targetMatch.venue}! Follow real-time goals and metrics instantly. (Instant Simulator)`;
+
+    dispatchNotification(title, body, true);
+
+    setMatches(prev => prev.map(m => {
+      if (m.id === fixtureId) {
+        return {
+          ...m,
+          status: "LIVE",
+          homeScore: 0,
+          awayScore: 0,
+          minute: 1,
+          scorers: ""
+        };
+      }
+      return m;
+    }));
+
+    // Insert kickoff events dynamically
+    setTickerEvents(prev => [
+      {
+        id: `e-live-kickoff-${Date.now()}`,
+        minute: 1,
+        type: "KICKOFF",
+        message: `🏟️ Match Kicked Off inside ${targetMatch.venue}! ${targetMatch.homeTeam} vs ${targetMatch.awayTeam} simulator started.`,
+        timestamp: new Date()
+      },
+      ...prev.slice(0, 19)
+    ]);
+  };
 
   // Update clock simulation
   useEffect(() => {
@@ -577,6 +781,131 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
             <span className="text-[10px] font-mono text-lime-400 font-bold bg-lime-550/10 px-2.5 py-1.5 rounded-xl border border-lime-500/20 flex items-center gap-1.5 select-none animate-pulse">
               <span>🌐</span> Localized Countdown Active
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Immersive FIFA Alert Center & Followed Squads Configuration Console */}
+      <div className="bg-zinc-950/80 border border-lime-500/20 rounded-2xl p-5 md:p-6 shadow-xl relative overflow-hidden" id="fifa-alerts-preference-console">
+        <div className="absolute top-0 left-0 w-32 h-32 bg-lime-500/5 blur-2xl pointer-events-none rounded-full" />
+        
+        <div className="flex flex-col lg:flex-row gap-6 justify-between items-stretch">
+          {/* Left Panel: Web Standard Permissions & Statuses */}
+          <div className="flex-1 space-y-4">
+            <div>
+              <span className="text-[10px] font-bold tracking-widest text-[#a3e635] uppercase font-mono bg-lime-500/10 px-2.5 py-1 rounded border border-lime-500/15 inline-flex items-center gap-1.5 leading-none">
+                <BellRing className="w-3.5 h-3.5 text-lime-400 animate-pulse" />
+                FIFA Browser Notifications Console
+              </span>
+              <h2 className="text-base font-black text-white mt-2 uppercase tracking-tight font-sans">
+                Secure Real-Time Match Alerts
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Receive instant browser push notifications the very moment your favorite teams kickoff, score, or finish standard tournament matches! Works anywhere in your browser window.
+              </p>
+            </div>
+
+            <div className="bg-black/50 border border-white/5 rounded-xl p-3.5 space-y-2.5 border border-white/5">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-400">Standard Browser Permission Status:</span>
+                <span className={`px-2 py-0.5 rounded font-black uppercase text-[10px] tracking-wide ${
+                  notiPermission === "granted" ? "bg-lime-500/10 text-[#a3e635] border border-lime-500/20" :
+                  notiPermission === "denied" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
+                  "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                }`}>
+                  {notiPermission === "granted" ? "● Allowed" :
+                   notiPermission === "denied" ? "● Blocked" :
+                   "● Click to Request"}
+                </span>
+              </div>
+
+              {/* Actions deck */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono pt-1">
+                <button
+                  onClick={handleRequestPermission}
+                  className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                    notiPermission === "granted"
+                      ? "bg-zinc-900 border-white/10 text-slate-500 cursor-not-allowed"
+                      : "bg-[#a3e635] hover:bg-lime-400 border-[#a3e635] text-zinc-950 font-black shadow-lg shadow-lime-950/20"
+                  }`}
+                  disabled={notiPermission === "granted"}
+                >
+                  <Bell className="w-3.5 h-3.5 shrink-0" />
+                  <span>{notiPermission === "granted" ? "Browser Alerts Active" : "Enable Browser Alerts"}</span>
+                </button>
+
+                <button
+                  onClick={handleTriggerTestNotification}
+                  className="py-2 px-3 rounded-lg font-bold bg-zinc-900 hover:bg-black border border-white/5 hover:border-[#a3e635]/30 text-slate-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="Force a simulated push notification mockup to test compatibility"
+                >
+                  <span>⚡</span>
+                  <span>Test Push Diagnostics</span>
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-slate-500 leading-relaxed font-sans mt-2">
+              ℹ️ <strong>Sandboxed Preview Alert:</strong> By default, Google AI Studio's development preview runs inside a sandboxed frame that may block web push API requests. For standard native notifications, tap the <strong>"Open in New Tab"</strong> button in our navigation header to test browser notification alerts with zero runtime limits!
+            </p>
+          </div>
+
+          {/* Vertical Divider for Desktop layout */}
+          <div className="hidden lg:block w-px bg-white/5 self-stretch" />
+
+          {/* Right Panel: Favorite Teams Pickers */}
+          <div className="flex-1 flex flex-col justify-between space-y-3">
+            <div>
+              <span className="text-[10px] font-bold tracking-widest text-slate-505 text-slate-400 uppercase font-mono flex items-center gap-1.5 align-middle">
+                <Trophy className="w-3.5 h-3.5 text-lime-400" />
+                Mark Followed Squads ({favoriteTeams.length} Active)
+              </span>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Click country badges below to mark them as favorites. Setting a favorite squad guarantees direct goal alerts and kickoff push notifications instantly!
+              </p>
+            </div>
+
+            {/* Participation flags deck grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-4 xl:grid-cols-5 gap-2 pt-1.5">
+              {[
+                { name: "Mexico", flag: "🇲🇽" },
+                { name: "United States", flag: "🇺🇸" },
+                { name: "Canada", flag: "🇨🇦" },
+                { name: "Argentina", flag: "🇦🇷" },
+                { name: "Brazil", flag: "🇧🇷" },
+                { name: "England", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+                { name: "Spain", flag: "🇪🇸" },
+                { name: "South Africa", flag: "🇿🇦" },
+                { name: "Australia", flag: "🇦🇺" },
+                { name: "Japan", flag: "🇯🇵" },
+                { name: "Morocco", flag: "🇲🇦" },
+                { name: "Saudi Arabia", flag: "🇸🇦" },
+                { name: "Ghana", flag: "🇬🇭" },
+                { name: "Sweden", flag: "🇸🇪" }
+              ].map(team => {
+                const isFavorite = favoriteTeams.includes(team.name);
+                return (
+                  <button
+                    key={team.name}
+                    onClick={() => handleToggleFavoriteTeam(team.name)}
+                    className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all relative select-none cursor-pointer group hover:scale-[1.03] ${
+                      isFavorite 
+                        ? "bg-gradient-to-br from-lime-950/25 via-lime-900/5 to-transparent border-[#a3e635]/40 text-white shadow shadow-lime-950/20" 
+                        : "bg-black/40 border-white/5 text-slate-400 hover:text-slate-200 hover:border-white/10"
+                    }`}
+                    title={`Follow ${team.name} real-time matches`}
+                  >
+                    <span className="text-2xl filter drop-shadow group-hover:scale-110 transition-transform">{team.flag}</span>
+                    <span className="text-[10px] font-bold font-mono tracking-tight mt-1 truncate max-w-full">{team.name}</span>
+                    {isFavorite && (
+                      <span className="absolute top-1 right-1 text-[8px] bg-lime-500 text-zinc-950 px-1 py-0.2 rounded font-black scale-90">
+                        ❤️
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -795,19 +1124,30 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
                       <span>📍</span> <span className="truncate">{fixture.venue}</span>
                     </p>
 
-                    {/* Interactive "Notify Me" action trigger button */}
-                    <button
-                      onClick={() => handleToggleSubscribe(fixture.id, fixture.homeTeam, fixture.awayTeam)}
-                      className={`w-full py-2.5 rounded-xl text-[10.5px] font-bold font-mono uppercase tracking-wide flex items-center justify-center gap-2 border cursor-pointer transition-all ${
-                        isSubscribed 
-                          ? "bg-lime-500/15 border border-lime-500/40 text-lime-300 animate-pulse glow-lemon/20" 
-                          : "bg-black/30 border border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
-                      }`}
-                      id={`notify-bell-toggle-${fixture.id}`}
-                    >
-                      {isSubscribed ? <BellRing className="w-3.5 h-3.5 text-lime-400" /> : <Bell className="w-3.5 h-3.5 text-slate-400 group-hover:text-white" />}
-                      <span>{isSubscribed ? "Notified Enabled" : "Notify Match Start"}</span>
-                    </button>
+                    {/* Interactive "Notify Me" and simulation triggers */}
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={() => handleToggleSubscribe(fixture.id, fixture.homeTeam, fixture.awayTeam)}
+                        className={`w-full py-2.5 rounded-xl text-[10px] font-bold font-mono uppercase tracking-wide flex items-center justify-center gap-1.5 border cursor-pointer transition-all ${
+                          isSubscribed 
+                            ? "bg-lime-500/15 border border-lime-500/45 text-lime-300 animate-pulse" 
+                            : "bg-black/30 border border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
+                        }`}
+                        id={`notify-bell-toggle-${fixture.id}`}
+                      >
+                        {isSubscribed ? <BellRing className="w-3.5 h-3.5 text-lime-400" /> : <Bell className="w-3.5 h-3.5 text-slate-400 group-hover:text-white" />}
+                        <span>{isSubscribed ? "Notifications Active" : "Notify Match Start"}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleSimulateKickoff(fixture.id)}
+                        className="w-full py-1.5 rounded-xl text-[9px] font-bold font-mono uppercase tracking-wider flex items-center justify-center gap-1 bg-zinc-900 border border-white/5 text-lime-400 hover:text-lime-350 hover:bg-black transition-all cursor-pointer"
+                        title="Force this upcoming match to kickoff immediately to test push notification alerts"
+                        id={`simulate-kickoff-${fixture.id}`}
+                      >
+                        <span>⚡ Simulate Kickoff Now</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
