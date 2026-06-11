@@ -22,6 +22,7 @@ import {
 import { Channel } from "../types";
 import ChannelCard from "./ChannelCard";
 import FifaHub from "./FifaHub";
+import { Language, useTranslation } from "../utils/translations";
 
 interface DashboardProps {
   channels: Channel[];
@@ -36,6 +37,7 @@ interface DashboardProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   setCurrentCategory?: (category: string) => void;
+  lang?: Language;
 }
 
 const COMING_SOON_MATCHES = [
@@ -99,10 +101,31 @@ export default function Dashboard({
   isRefreshing,
   searchQuery,
   setSearchQuery,
-  setCurrentCategory
+  setCurrentCategory,
+  lang = "en"
 }: DashboardProps) {
+  const { t } = useTranslation(lang);
   const [showOnlyFeatured, setShowOnlyFeatured] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  const getCategoryDisplayName = (catId: string) => {
+    if (catId === "all") return t("allChannels");
+    if (catId === "featured") return t("featuredChannels");
+    if (catId === "fifa_2026") return t("fifaCup");
+    if (catId === "favorites") return t("myFavorites");
+    if (catId === "history") return t("watchHistory");
+
+    if (catId === "Bangla") return t("Bangla");
+    if (catId === "Sports") return t("Sports");
+    if (catId === "News") return t("News");
+    if (catId === "Movies") return t("Movies");
+    if (catId === "Music") return t("Music");
+    if (catId === "Kids") return t("Kids");
+    if (catId === "Religious") return t("ReligiousLabel");
+    if (catId === "Others") return t("OthersLabel");
+
+    return catId;
+  };
 
   const showNotification = useCallback((msg: string) => {
     // Safely defer parent state updates to protect against React layout rendering conflicts
@@ -258,7 +281,7 @@ export default function Dashboard({
               }`}
             >
               <Star className={`w-3.5 h-3.5 text-lime-400 ${showOnlyFeatured ? "fill-current" : ""}`} />
-              <span>Only Featured</span>
+              <span>{t("onlyFeatured")}</span>
             </button>
           )}
 
@@ -273,7 +296,7 @@ export default function Dashboard({
             id="force-refresh-btn"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-lime-500 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span>Update List</span>
+            <span>{t("refreshFeed")}</span>
           </button>
         </div>
       </div>
@@ -304,7 +327,7 @@ export default function Dashboard({
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#a3e635] animate-pulse" />
                   <h2 className="text-xs font-black tracking-widest text-[#a3e635] uppercase font-mono bg-lime-500/10 px-2.5 py-1 rounded border border-lime-500/15">
-                    Featured Highlights
+                    {t("featuredHighlights")}
                   </h2>
                 </div>
                 
@@ -359,7 +382,7 @@ export default function Dashboard({
                 <div className="flex items-center gap-2">
                   <Trophy className="w-4 h-4 text-amber-400" />
                   <h2 className="text-xs font-black tracking-widest text-[#a3e635] uppercase font-mono bg-lime-500/10 px-2.5 py-1 rounded border border-lime-500/15">
-                    Coming Soon Matches
+                    {t("upcomingMatches")}
                   </h2>
                 </div>
                 
@@ -369,7 +392,7 @@ export default function Dashboard({
                       onClick={() => setCurrentCategory("fifa_2026")}
                       className="text-[9.5px] sm:text-[10px] font-bold text-[#a3e635] bg-lime-500/10 hover:bg-lime-500/15 px-2.5 py-1.5 rounded-lg border border-lime-500/15 transition-all flex items-center gap-1 cursor-pointer font-mono"
                     >
-                      ENTER MATCH CENTER
+                      {lang === "bn" ? "ম্যাচ সেন্টারে যান" : "ENTER MATCH CENTER"}
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -406,7 +429,9 @@ export default function Dashboard({
                   if (diff > 0) {
                     const hours = Math.floor(diff / 3600000);
                     const minutes = Math.floor((diff % 3600000) / 60000);
-                    countdownText = `${hours}h ${minutes}m left`;
+                    countdownText = lang === "bn" ? `${hours} ঘণ্টা ${minutes} মিনিট বাকি` : `${hours}h ${minutes}m left`;
+                  } else {
+                    countdownText = lang === "bn" ? "খুব শীঘ্রই শুরু হবে" : "Kickoff imminent";
                   }
 
                   return (
@@ -463,7 +488,7 @@ export default function Dashboard({
                       {/* Lower actions deck */}
                       <div className="relative z-10 pt-3 border-t border-white/5 flex items-center justify-between gap-2.5">
                         <div className="truncate flex flex-col">
-                          <span className="text-[8px] font-bold font-mono text-slate-500 uppercase tracking-widest block">VENUE</span>
+                          <span className="text-[8px] font-bold font-mono text-slate-500 uppercase tracking-widest block">{lang === "bn" ? "ভ্যানু" : "VENUE"}</span>
                           <span className="text-[10.5px] text-slate-300 truncate max-w-[125px] block font-sans font-medium">
                             {match.venue}
                           </span>
@@ -479,7 +504,7 @@ export default function Dashboard({
                           title={isSubscribed ? "Matches Alarmed" : "Enable kickoff alerts"}
                         >
                           {isSubscribed ? <BellRing className="w-3 h-3 text-lime-400" /> : <Bell className="w-3 h-3 text-slate-400" />}
-                          <span>{isSubscribed ? "Notified" : "Notify Me"}</span>
+                          <span>{isSubscribed ? (lang === "bn" ? "অ্যালার্ট সক্রিয়" : "Notified") : (lang === "bn" ? "জানানো হোক" : "Notify Me")}</span>
                         </button>
                       </div>
                     </div>
@@ -610,11 +635,14 @@ export default function Dashboard({
               <div className="flex items-center gap-2.5">
                 <Grid className="w-4.5 h-4.5 text-lime-500" />
                 <h2 className="text-sm font-bold tracking-wider text-slate-400 uppercase font-mono">
-                  {currentCategory === "all" ? "Channel Directory" : `${currentCategory} Selection`}
+                  {getCategoryDisplayName(currentCategory)}
                 </h2>
               </div>
               <span className="text-xs text-slate-500 font-mono font-medium">
-                Found {filteredChannels.length} channels
+                {lang === "bn" 
+                  ? `ক্রাইটেরিয়া অনুযায়ী ${filteredChannels.length}টি চ্যানেল পাওয়া গেছে` 
+                  : `Found ${filteredChannels.length} channels`
+                }
               </span>
             </div>
 
@@ -622,9 +650,14 @@ export default function Dashboard({
             {filteredChannels.length === 0 && (
               <div className="flex flex-col items-center justify-center p-12 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl" id="grid-empty-container">
                 <Tv className="w-10 h-10 text-slate-600 animate-bounce mb-3" />
-                <p className="text-sm text-slate-400 font-semibold font-display">No Channels Found</p>
+                <p className="text-sm text-slate-400 font-semibold font-display">
+                  {lang === "bn" ? "কোনো চ্যানেল পাওয়া যায়নি" : "No Channels Found"}
+                </p>
                 <p className="text-xs text-slate-500 max-w-sm mt-1">
-                  Could not match any channel listings in <span className="font-mono text-slate-400 font-semibold uppercase">"{currentCategory}"</span> matching that query.
+                  {lang === "bn" 
+                    ? `আপনার খোঁজা নামের কোনো চ্যানেল "${getCategoryDisplayName(currentCategory)}" ক্যাটাগরিতে খুঁজে পাওয়া যায়নি।` 
+                    : `Could not match any channel listings in "${getCategoryDisplayName(currentCategory)}" matching that query.`
+                  }
                 </p>
                 {searchQuery && (
                   <button
@@ -632,7 +665,7 @@ export default function Dashboard({
                     className="mt-4 bg-white/10 hover:bg-white/20 text-white border border-white/10 px-4 py-2 rounded-xl text-xs font-semibold transition-all"
                     id="clear-search-btn"
                   >
-                    Clear Search Query
+                    {lang === "bn" ? "অনুসন্ধান মুছুন" : "Clear Search Query"}
                   </button>
                 )}
               </div>

@@ -8,13 +8,15 @@ import {
   Loader2, 
   RefreshCw,
   Info,
-  Search
+  Search,
+  Globe
 } from "lucide-react";
 import { Channel } from "./types";
 import Sidebar from "./components/Sidebar";
 import LivePlayer from "./components/LivePlayer";
 import Dashboard from "./components/Dashboard";
 import { fetchChannelsClientSide } from "./utils/playlistClient";
+import { Language, useTranslation } from "./utils/translations";
 
 export default function App() {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -29,6 +31,36 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMiniPlayerActive, setIsMiniPlayerActive] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const [lang, setLang] = useState<Language>(() => {
+    try {
+      const stored = localStorage.getItem("iptv-lang");
+      if (stored === "en" || stored === "bn") return stored;
+
+      // Fast instant detection based on Browser locale or Timezone (Dhaka)
+      const isBnLocale = navigator.languages 
+        ? navigator.languages.some(l => l.toLowerCase().includes('bn')) 
+        : navigator.language?.toLowerCase().includes('bn');
+      const isDhakaTz = Intl.DateTimeFormat().resolvedOptions().timeZone?.toLowerCase().includes('dhaka');
+
+      if (isBnLocale || isDhakaTz) {
+        return "bn";
+      }
+      return "en";
+    } catch (e) {
+      return "en";
+    }
+  });
+
+  const { t } = useTranslation(lang);
+
+  const handleToggleLang = (selected: Language) => {
+    setLang(selected);
+    try {
+      localStorage.setItem("iptv-lang", selected);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // 1. Fetch channels from server-side api with modern client-side fallback support for static hosting (Vercel)
   const fetchChannels = async (forceRefresh = false) => {
@@ -98,6 +130,38 @@ export default function App() {
     } catch (err) {
       console.error("Failed to parse stored watch history:", err);
     }
+
+    // Detect location using IP Geolocation
+    const detectLocationAndSetLang = async () => {
+      try {
+        const stored = localStorage.getItem("iptv-lang");
+        if (stored) return; // Respect any existing manual selection
+        
+        const res = await fetch("https://ipapi.co/json/");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && (data.country_code === "BD" || data.country === "BD" || data.country_name?.toLowerCase() === "bangladesh")) {
+            setLang("bn");
+            localStorage.setItem("iptv-lang", "bn");
+            return;
+          }
+        }
+      } catch (err) {
+        try {
+          const fbRes = await fetch("https://freeipapi.com/api/json");
+          if (fbRes.ok) {
+            const fbData = await fbRes.json();
+            if (fbData && (fbData.countryCode === "BD" || fbData.countryName?.toLowerCase() === "bangladesh")) {
+              setLang("bn");
+              localStorage.setItem("iptv-lang", "bn");
+            }
+          }
+        } catch (fadeErr) {
+          console.warn("All location resolution fallbacks failed:", fadeErr);
+        }
+      }
+    };
+    detectLocationAndSetLang();
   }, []);
 
   // 2.5 Auto-deep-link support for shared channel parameters
@@ -213,6 +277,7 @@ export default function App() {
             history={history}
             isOpenOnMobile={sidebarOpenOnMobile}
             setIsOpenOnMobile={setSidebarOpenOnMobile}
+            lang={lang}
           />
         </div>
 
@@ -221,7 +286,7 @@ export default function App() {
           
           {/* Global Header Bar */}
           <header className={`flex items-center justify-between gap-4 px-4 md:px-8 border-b border-white/10 z-20 shrink-0 transition-all duration-500 ${isTheaterMode && selectedChannel ? "opacity-10 py-1 blur-[2px] pointer-events-none" : "bg-black/40 backdrop-blur-xl py-3.5"}`} id="global-header-bar">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 md:gap-4">
               {/* Mobile menu trigger */}
               <button
                 onClick={() => setSidebarOpenOnMobile(true)}
@@ -232,7 +297,7 @@ export default function App() {
               </button>
               
               {/* App Identity */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mr-1 sm:mr-3">
                 <div className="w-7 h-7 bg-lime-500 rounded flex items-center justify-center font-bold text-xs text-zinc-950 shadow-md shadow-lime-950/40 font-display">
                   M
                 </div>
@@ -240,29 +305,60 @@ export default function App() {
                   Madrid<span className="text-lime-400">tvlive</span>
                 </span>
               </div>
+
+              {/* Elegant Language Switcher UI Element (Positioned on Top Left) */}
+              <div className="flex items-center bg-black/60 border border-white/10 rounded-xl p-0.5 shrink-0" id="header-language-switcher">
+                <button
+                  type="button"
+                  onClick={() => handleToggleLang("en")}
+                  className={`px-2 py-1 text-[10px] font-mono font-bold tracking-wide transition-all uppercase rounded-lg cursor-pointer ${
+                    lang === "en"
+                      ? "bg-lime-500/15 border border-lime-500/30 text-lime-400 shadow-sm"
+                      : "border border-transparent text-slate-400 hover:text-white"
+                  }`}
+                  title="Switch to English"
+                >
+                  EN
+                </button>
+                <div className="w-px h-3 bg-white/10" />
+                <button
+                  type="button"
+                  onClick={() => handleToggleLang("bn")}
+                  className={`px-2 py-1 text-[10px] font-mono font-bold tracking-wide transition-all uppercase rounded-lg cursor-pointer ${
+                    lang === "bn"
+                      ? "bg-lime-500/15 border border-lime-500/30 text-lime-400 shadow-sm"
+                      : "border border-transparent text-slate-400 hover:text-white"
+                  }`}
+                  title="বাংলায় পরিবর্তন করুন"
+                >
+                  বাংলা
+                </button>
+              </div>
             </div>
 
-            {/* Global Search Bar */}
-            <div className="relative flex-1 max-w-[160px] sm:max-w-xs md:max-w-sm" id="global-search-container">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search channels..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-black/50 border border-white/10 focus:border-lime-500/80 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-lime-500/50 transition-all font-sans"
-                id="global-search-input"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors text-xs font-bold leading-none"
-                  title="Clear search"
-                  id="global-search-clear"
-                >
-                  ✕
-                </button>
-              )}
+            {/* Global Search Bar (Language Switcher removed from right) */}
+            <div className="flex items-center gap-3" id="header-right-controls-container">
+              <div className="relative flex-1 min-w-[120px] sm:min-w-[200px]" id="global-search-container">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder={t("searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 focus:border-lime-500/80 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-lime-500/50 transition-all font-sans"
+                  id="global-search-input"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors text-xs font-bold leading-none"
+                    title="Clear search"
+                    id="global-search-clear"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
           </header>
 
@@ -270,7 +366,7 @@ export default function App() {
           <div className={`border-b border-white/5 px-4 md:px-8 flex items-center gap-3 overflow-hidden text-xs shrink-0 select-none z-15 transition-all duration-500 ${isTheaterMode && selectedChannel ? "opacity-10 py-1 blur-[2px] pointer-events-none" : "bg-zinc-950/90 py-2.5"}`} id="now-playing-sub-ticker">
             <div className="flex items-center gap-1.5 shrink-0 bg-lime-500/15 border border-lime-500/30 text-lime-400 font-mono text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-lime-500 live-pulse" />
-              Now Playing
+              {t("nowPlaying")}
             </div>
             
             <div className="relative flex-1 overflow-hidden" id="ticker-scroll-wrapper">
@@ -278,29 +374,29 @@ export default function App() {
                 {selectedChannel ? (
                   <>
                     <span className="inline-flex items-center gap-1">
-                      Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
-                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
-                      <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
-                      <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
+                      {lang === "bn" ? "লাইভ সম্প্রচার:" : "Broadcasting Live:"} <strong className="text-white font-bold">{selectedChannel.name}</strong> 
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "ক্যাটাগরি:" : "Category:"} <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "উৎস:" : "Source:"} <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "ফরম্যাট:" : "Format:"} <span className="text-emerald-400 font-mono font-semibold">{lang === "bn" ? "লাইভ আইপিটিভি" : "Live IPTV (HLS Playback)"}</span>
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
-                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
-                      <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
-                      <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
+                      {lang === "bn" ? "লাইভ সম্প্রচার:" : "Broadcasting Live:"} <strong className="text-white font-bold">{selectedChannel.name}</strong> 
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "ক্যাটাগরি:" : "Category:"} <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "উৎস:" : "Source:"} <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "ফরম্যাট:" : "Format:"} <span className="text-emerald-400 font-mono font-semibold">{lang === "bn" ? "লাইভ আইপিটিভি" : "Live IPTV (HLS Playback)"}</span>
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      Broadcasting Live: <strong className="text-white font-bold">{selectedChannel.name}</strong> 
-                      <span className="text-zinc-700 mx-1">•</span> Category: <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
-                      <span className="text-zinc-700 mx-1">•</span> Source: <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
-                      <span className="text-zinc-700 mx-1">•</span> Format: <span className="text-emerald-400 font-mono font-semibold">Live IPTV (HLS Playback)</span>
+                      {lang === "bn" ? "লাইভ সম্প্রচার:" : "Broadcasting Live:"} <strong className="text-white font-bold">{selectedChannel.name}</strong> 
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "ক্যাটাগরি:" : "Category:"} <span className="text-lime-400 font-extrabold uppercase text-[9.5px] px-1 bg-lime-500/10 border border-lime-500/20 rounded">{selectedChannel.category}</span>
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "উৎস:" : "Source:"} <span className="text-slate-300 font-semibold">{selectedChannel.originalGroup || "Global Stream"}</span>
+                      <span className="text-zinc-700 mx-1">•</span> {lang === "bn" ? "ফরম্যাট:" : "Format:"} <span className="text-emerald-400 font-mono font-semibold">{lang === "bn" ? "লাইভ আইপিটিভি" : "Live IPTV (HLS Playback)"}</span>
                     </span>
                   </>
                 ) : (
                   <>
-                    <span>Welcome to Madridtvlive Premium • Select any channel below to immediately trigger seamless live stream feeds</span>
-                    <span>Welcome to Madridtvlive Premium • Select any channel below to immediately trigger seamless live stream feeds</span>
-                    <span>Welcome to Madridtvlive Premium • Select any channel below to immediately trigger seamless live stream feeds</span>
+                    <span>{t("welcomeTitle")} • {t("welcomeSubtitle")}</span>
+                    <span>{t("welcomeTitle")} • {t("welcomeSubtitle")}</span>
+                    <span>{t("welcomeTitle")} • {t("welcomeSubtitle")}</span>
                   </>
                 )}
               </div>
@@ -312,10 +408,13 @@ export default function App() {
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center" id="platform-fetching-loader">
               <Loader2 className="w-12 h-12 text-brand-500 animate-spin" />
               <span className="text-sm font-semibold font-display tracking-tight text-slate-300 mt-4 animate-pulse">
-                Buffering Channel Playlists...
+                {lang === "bn" ? "চ্যানেল তথ্য লোড হচ্ছে..." : "Buffering Channel Playlists..."}
               </span>
               <p className="text-xs text-slate-500 max-w-sm mt-1.5 leading-relaxed">
-                Establishing server handshakes to compile categories from git index feeds. Thank you for your patience.
+                {lang === "bn" 
+                  ? "ক্যাটাগরিগুলো বিন্যাস করার জন্য সার্ভারের সাথে সংযোগ স্থাপন করা হচ্ছে। অনুগ্রহ করে একটু অপেক্ষা করুন।" 
+                  : "Establishing server handshakes to compile categories from git index feeds. Thank you for your patience."
+                }
               </p>
             </div>
           ) : errorMessage ? (
@@ -323,9 +422,14 @@ export default function App() {
               <div className="w-16 h-16 bg-rose-500/10 rounded-2xl border border-rose-500/30 flex items-center justify-center text-rose-500 mb-4 animate-bounce">
                 <WifiOff className="w-8 h-8" />
               </div>
-              <h2 className="text-lg font-bold font-display text-white">Playlist Connection Offline</h2>
+              <h2 className="text-lg font-bold font-display text-white">
+                {lang === "bn" ? "প্লেলিস্ট সংযোগ অফলাইন" : "Playlist Connection Offline"}
+              </h2>
               <p className="text-xs text-slate-400 mt-2 max-w-sm leading-relaxed">
-                {errorMessage}. The public raw files inside the GitHub repository could be temporarily unreachable due to API bottlenecks.
+                {errorMessage}. {lang === "bn" 
+                  ? "গিটহাব রিপোজিটরির পাবলিক ফাইলগুলো সাময়িকভাবে এপিআই সীমাবদ্ধতার কারণে সংযোগহীন হতে পারে।" 
+                  : "The public raw files inside the GitHub repository could be temporarily unreachable due to API bottlenecks."
+                }
               </p>
               <button
                 onClick={() => fetchChannels()}
@@ -333,7 +437,7 @@ export default function App() {
                 id="platform-retry-fetch-btn"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Retry Client Synchronization</span>
+                <span>{lang === "bn" ? "পুনরায় সংযোগ করুন" : "Retry Client Synchronization"}</span>
               </button>
             </div>
           ) : (
@@ -357,7 +461,12 @@ export default function App() {
                       id="theater-mode-top-banner"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-[#a3e635] animate-pulse" />
-                      <span>Theater Mode Active • Click anywhere around the player or press <kbd className="bg-white/10 px-1 py-0.5 rounded font-mono font-bold text-[9.5px]">ESC</kbd> to exit</span>
+                      <span>
+                        {lang === "bn" 
+                          ? "থিয়েটার মোড সক্রিয় • থিয়েটার মোড বন্ধ করতে প্লেয়ারের বাইরে যেকোনো জায়গায় ক্লিক করুন অথবা ESC চাপুন" 
+                          : "Theater Mode Active • Click anywhere around the player or press ESC to exit"
+                        }
+                      </span>
                     </div>
                   )}
 
@@ -381,9 +490,14 @@ export default function App() {
                             <Tv className="w-6 h-6 animate-pulse" />
                           </div>
                           <div>
-                            <h3 className="text-sm font-bold font-display text-white">Picture-in-Picture Active</h3>
+                            <h3 className="text-sm font-bold font-display text-white">
+                              {lang === "bn" ? "পিকচার-ইন-পিকচার সক্রিয় রয়েছে" : "Picture-in-Picture Active"}
+                            </h3>
                             <p className="text-xs text-slate-400 mt-1 max-w-md font-sans leading-relaxed">
-                              "{selectedChannel.name}" is playing in a floating video overlay. Swipe, search, and browse categories below freely!
+                              {lang === "bn" 
+                                ? `"${selectedChannel.name}" এখন ভাঁসমান ভিডিও প্লেয়ারে চলছে। আপনি এখন নির্দ্বিধায় নিচের অন্যান্য ক্যাটাগরিগুলো ব্রাউজ ও অনুসন্ধান করতে পারেন!` 
+                                : `"${selectedChannel.name}" is playing in a floating video overlay. Swipe, search, and browse categories below freely!`
+                              }
                             </p>
                           </div>
                         </div>
@@ -393,7 +507,7 @@ export default function App() {
                           className="px-5 py-2.5 bg-lime-550 bg-lime-600 hover:bg-lime-500 text-zinc-950 font-extrabold rounded-xl text-xs hover:scale-102 hover:shadow-lime-500/15 transition-all shadow-lg shadow-lime-950/20 relative z-10 shrink-0"
                           id="pip-restore-btn"
                         >
-                          Restore Player Inline
+                          {lang === "bn" ? "প্লেয়ার রিস্টোর করুন" : "Restore Player Inline"}
                         </button>
                       </div>
                     ) : (
@@ -429,6 +543,7 @@ export default function App() {
                       searchQuery={searchQuery}
                       setSearchQuery={setSearchQuery}
                       setCurrentCategory={setCurrentCategory}
+                      lang={lang}
                     />
                   </div>
                 </div>
@@ -447,6 +562,7 @@ export default function App() {
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
                   setCurrentCategory={setCurrentCategory}
+                  lang={lang}
                 />
               )}
 

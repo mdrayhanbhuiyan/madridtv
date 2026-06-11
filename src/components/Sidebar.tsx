@@ -16,6 +16,7 @@ import {
   X
 } from "lucide-react";
 import { Channel } from "../types";
+import { Language, useTranslation } from "../utils/translations";
 
 interface SidebarProps {
   currentCategory: string;
@@ -25,6 +26,7 @@ interface SidebarProps {
   history: string[];
   isOpenOnMobile: boolean;
   setIsOpenOnMobile: (open: boolean) => void;
+  lang?: Language;
 }
 
 export default function Sidebar({
@@ -34,9 +36,11 @@ export default function Sidebar({
   favorites,
   history,
   isOpenOnMobile,
-  setIsOpenOnMobile
+  setIsOpenOnMobile,
+  lang = "en"
 }: SidebarProps) {
   
+  const { t } = useTranslation(lang);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [sidebarOffset, setSidebarOffset] = useState(0);
   const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
@@ -101,23 +105,23 @@ export default function Sidebar({
   };
 
   const navItems = [
-    { id: "all", name: "All Channels", icon: Tv },
-    { id: "featured", name: "Featured Channels", icon: Sparkles, color: "text-lime-400" },
-    { id: "fifa_2026", name: "FIFA World Cup 2026", icon: Trophy, color: "text-lime-400" },
-    { id: "favorites", name: "My Favorites", icon: Heart, color: "text-rose-500" },
-    { id: "history", name: "Watch History", icon: History, color: "text-blue-400" },
+    { id: "all", name: t("allChannels"), icon: Tv },
+    { id: "featured", name: t("featuredChannels"), icon: Sparkles, color: "text-lime-400" },
+    { id: "fifa_2026", name: t("fifaCup"), icon: Trophy, color: "text-lime-400" },
+    { id: "favorites", name: t("myFavorites"), icon: Heart, color: "text-rose-500" },
+    { id: "history", name: t("watchHistory"), icon: History, color: "text-blue-400" },
   ];
 
   const contentCategories = [
-    { id: "Bangla", name: "Bangla Media", icon: Grid },
-    { id: "Sports", name: "Sports Arena", icon: Trophy },
-    { id: "News", name: "News 24/7", icon: Newspaper },
-    { id: "Entertainment", name: "Entertainment", icon: Film },
-    { id: "Movies", name: "Movies & Cinema", icon: Film },
-    { id: "Music", name: "Music Hits", icon: Music },
-    { id: "Kids", name: "Kids Zone", icon: Smile },
-    { id: "Religious", name: "Religious", icon: Compass },
-    { id: "Others", name: "Others", icon: Grid }
+    { id: "Bangla", name: t("Bangla"), icon: Grid },
+    { id: "Sports", name: t("Sports"), icon: Trophy },
+    { id: "News", name: t("News"), icon: Newspaper },
+    { id: "Entertainment", name: t("Entertainment"), icon: Film },
+    { id: "Movies", name: t("Movies"), icon: Film },
+    { id: "Music", name: t("Music"), icon: Music },
+    { id: "Kids", name: t("Kids"), icon: Smile },
+    { id: "Religious", name: t("ReligiousLabel"), icon: Compass },
+    { id: "Others", name: t("OthersLabel"), icon: Grid }
   ];
 
   const handleCategorySelect = (id: string) => {
@@ -153,7 +157,7 @@ export default function Sidebar({
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-7" id="sidebar-groups">
         {/* Core Quick Access lists */}
         <div>
-          <span className="px-3 text-[10px] font-bold tracking-widest text-slate-500 uppercase font-mono">Quick Access</span>
+          <span className="px-3 text-[10px] font-bold tracking-widest text-slate-500 uppercase font-mono">{t("quickAccess")}</span>
           <ul className="mt-2 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -187,7 +191,7 @@ export default function Sidebar({
 
         {/* Channels by Genres */}
         <div>
-          <span className="px-3 text-[10px] font-bold tracking-widest text-slate-500 uppercase font-mono">Genres / Categories</span>
+          <span className="px-3 text-[10px] font-bold tracking-widest text-slate-500 uppercase font-mono">{t("genresCategories")}</span>
           <ul className="mt-2 space-y-1">
             {contentCategories.map((cat) => {
               const Icon = cat.icon;
@@ -225,10 +229,10 @@ export default function Sidebar({
       {/* Premium Lifetime Feature Panel */}
       <div className="p-4 mx-3 mb-2 bg-gradient-to-br from-lime-500/10 via-lime-950/20 to-black/40 border border-lime-500/25 rounded-2xl shadow-xl glow-lemon/15 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-16 h-16 bg-lime-500/10 blur-2xl pointer-events-none rounded-full" />
-        <p className="text-[9px] text-lime-400 font-bold uppercase tracking-widest mb-1 font-mono">Active Privilege</p>
+        <p className="text-[9px] text-lime-400 font-bold uppercase tracking-widest mb-1 font-mono">{t("activePrivilege")}</p>
         <p className="text-xs font-bold text-white font-sans flex items-center gap-1.5 uppercase tracking-wide">
           <Sparkles className="w-3.5 h-3.5 text-lime-400 fill-current animate-pulse" />
-          <span>Premium Lifetime Access</span>
+          <span>{t("premiumLifetime")}</span>
         </p>
         <div className="mt-3 h-1 w-full bg-white/5 rounded-full overflow-hidden">
           <div className="h-full w-full bg-gradient-to-r from-lime-600 to-lime-400 rounded-full animate-pulse"></div>
@@ -238,7 +242,7 @@ export default function Sidebar({
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-white/10 bg-black/20 text-[11px] text-slate-500 flex flex-col gap-1.5" id="sidebar-footer">
         <div className="flex items-center justify-between">
-          <span>Developer ID</span>
+          <span>{t("developerId")}</span>
           <a 
             href="https://www.facebook.com/mdrayhanOfficial/" 
             target="_blank" 
@@ -249,7 +253,7 @@ export default function Sidebar({
           </a>
         </div>
         <div className="text-[9px] text-slate-600 font-mono text-center mt-1">
-          Streams updated dynamically
+          {t("streamsUpdated")}
         </div>
       </div>
     </div>
