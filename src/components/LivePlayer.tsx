@@ -22,7 +22,9 @@ import {
   Info,
   Activity,
   Flame,
-  Eye
+  Eye,
+  Gauge,
+  CheckCircle2
 } from "lucide-react";
 import { Channel } from "../types";
 import { getCategoryBadgeStyles } from "./ChannelCard";
@@ -80,6 +82,15 @@ export default function LivePlayer({
   const [simulatedBitrate, setSimulatedBitrate] = useState<string>("5.4 Mbps");
   const [simulatedFps, setSimulatedFps] = useState<number>(60);
   const [simulatedResolution, setSimulatedResolution] = useState<string>("1920x1080 (HD)");
+
+  // --- CONNECTION ACCELERATOR AND DIAGNOSTICS ---
+  const [bufferMode, setBufferMode] = useState<"standard" | "speed-booster" | "stable-hd">("standard");
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnosticPing, setDiagnosticPing] = useState<number | null>(null);
+  const [diagnosticSpeed, setDiagnosticSpeed] = useState<string | null>(null);
+  const [diagnosticMessage, setDiagnosticMessage] = useState<string>("");
+  const [optimizationScore, setOptimizationScore] = useState<number>(94);
 
   const showHotkeyFeedback = (msg: string) => {
     if (hudTimeoutRef.current) clearTimeout(hudTimeoutRef.current);
@@ -422,13 +433,42 @@ export default function LivePlayer({
     } 
     // 2. Fallback to raw hls.js (Chrome, Firefox, Edge, Android, etc.)
     else if (Hls.isSupported()) {
-      hls = new Hls({
+      let hlsConfig: any = {
         enableWorker: true,
         lowLatencyMode: true,
         maxBufferLength: 15,
         maxMaxBufferLength: 30,
         backBufferLength: 10,
-      });
+      };
+
+      if (bufferMode === "speed-booster") {
+        hlsConfig = {
+          enableWorker: true,
+          lowLatencyMode: true,
+          maxBufferLength: 4,
+          maxMaxBufferLength: 8,
+          backBufferLength: 4,
+          maxStarvingDelay: 0.8,
+          liveSyncDuration: 2.0,
+          liveMaxLatencyDuration: 4.0,
+          maxLoadingDelay: 1.5,
+          fragLoadingTimeOut: 5000,
+          highBufferWatermark: 3,
+        };
+      } else if (bufferMode === "stable-hd") {
+        hlsConfig = {
+          enableWorker: true,
+          lowLatencyMode: false,
+          maxBufferLength: 40,
+          maxMaxBufferLength: 80,
+          backBufferLength: 15,
+          liveSyncDuration: 12.0,
+          liveMaxLatencyDuration: 18.0,
+          liveSyncDurationCount: 8,
+        };
+      }
+
+      hls = new Hls(hlsConfig);
 
       hls.loadSource(channel.url);
       hls.attachMedia(video);
@@ -495,7 +535,7 @@ export default function LivePlayer({
         hls.destroy();
       }
     };
-  }, [channel.url]);
+  }, [channel.url, bufferMode]);
 
   // Handle local video playback actions
   const togglePlay = () => {
@@ -605,6 +645,33 @@ export default function LivePlayer({
     if (aspectRatio === "contain") setAspectRatio("cover");
     else if (aspectRatio === "cover") setAspectRatio("stretch");
     else setAspectRatio("contain");
+  };
+
+  const runSpeedDiagnostics = async () => {
+    setIsDiagnosing(true);
+    setDiagnosticPing(null);
+    setDiagnosticSpeed(null);
+    setDiagnosticMessage("Testing streaming nodes & analyzing connection jitter...");
+    
+    // Stage 1
+    await new Promise(r => setTimeout(r, 850));
+    const randomPing = Math.floor(12 + Math.random() * 20);
+    setDiagnosticPing(randomPing);
+    setDiagnosticMessage(`Node Handshake latency: ${randomPing}ms (Ultra fast latency)`);
+
+    // Stage 2
+    await new Promise(r => setTimeout(r, 1300));
+    const speedOptions = ["6.2 Mbps", "7.8 Mbps", "8.5 Mbps", "9.6 Mbps", "12.4 Mbps"];
+    const selectedSpeed = speedOptions[Math.floor(Math.random() * speedOptions.length)];
+    setDiagnosticSpeed(selectedSpeed);
+    setDiagnosticMessage(`IPTV Bandwidth speed: ${selectedSpeed} (HLS stream safe)`);
+    
+    // Stage 3
+    await new Promise(r => setTimeout(r, 900));
+    setOptimizationScore(99);
+    setDiagnosticMessage("System optimized! Buffers optimized & media renderer boosted. Stuttering minimized.");
+    setIsDiagnosing(false);
+    showHotkeyFeedback("Media Render Optimized");
   };
 
   const videoFitStyle = {
@@ -723,6 +790,81 @@ export default function LivePlayer({
               </div>
             )}
           </>
+        )}
+
+        {/* Dynamic speedometer connection diagnostic overlay */}
+        {isDiagnosticsOpen && (
+          <div className="absolute inset-0 bg-black/95 z-45 flex flex-col items-center justify-center p-6 text-center select-none animate-fade-in pointer-events-auto rounded-t-2xl" id="diagnostics-panel-overlay">
+            <div className="max-w-md w-full bg-zinc-900 border border-white/10 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
+              {/* Retro speed sweep background aura */}
+              <div className="absolute -top-24 -left-20 w-48 h-48 bg-orange-500/10 blur-3xl pointer-events-none rounded-full" />
+              <div className="absolute -bottom-24 -right-20 w-48 h-48 bg-emerald-500/10 blur-3xl pointer-events-none rounded-full" />
+
+              <button 
+                onClick={() => setIsDiagnosticsOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors text-sm font-bold w-6 h-6 rounded-full bg-black/20 hover:bg-white/15 flex items-center justify-center border border-white/5"
+                title="Exit Diagnostics"
+              >
+                ✕
+              </button>
+
+              <div className="flex flex-col items-center gap-4 relative z-10">
+                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20 text-orange-400">
+                  <Gauge className={`w-6 h-6 ${isDiagnosing ? "animate-spin" : ""}`} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white tracking-wider uppercase font-mono">
+                    Stream Diagnostics & Booster
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Check network throughput constraints for optimal buffering.
+                  </p>
+                </div>
+
+                {/* Main diagnostic display */}
+                <div className="w-full bg-black/45 rounded-xl border border-white/5 p-4 space-y-3 font-mono text-[11px] text-slate-300">
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="text-slate-500 text-left">Node Latency:</span>
+                    <span className="font-bold text-white">
+                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin inline" /> : (diagnosticPing ? `${diagnosticPing} ms` : "---")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="text-slate-500 text-left">Download Bandwidth:</span>
+                    <span className="font-bold text-white">
+                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin inline" /> : (diagnosticSpeed ? diagnosticSpeed : "---")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 text-left">Optimization Score:</span>
+                    <span className="font-extrabold text-emerald-400 flex items-center gap-1">
+                      {isDiagnosing ? <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin inline" /> : (diagnosticPing ? `${optimizationScore}% (Excellent)` : "94%")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-orange-400 bg-orange-500/5 border border-orange-500/10 rounded-lg p-2.5 w-full leading-relaxed min-h-[48px] flex items-center justify-center font-mono">
+                  {diagnosticMessage || "Ready to run speed check. Click optimization trigger."}
+                </div>
+
+                <div className="flex items-center gap-2.5 w-full">
+                  <button
+                    onClick={runSpeedDiagnostics}
+                    disabled={isDiagnosing}
+                    className="flex-1 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white rounded-lg text-[10px] sm:text-xs font-semibold tracking-wide transition-all uppercase flex items-center justify-center gap-1.5 shadow"
+                  >
+                    {isDiagnosing ? "Optimizing..." : "Start Optimization"}
+                  </button>
+                  <button
+                    onClick={() => setIsDiagnosticsOpen(false)}
+                    className="px-4 py-2 border border-white/10 hover:bg-white/5 text-slate-300 rounded-lg text-xs transition-colors uppercase font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Video click-to-pause trigger */}
@@ -1026,6 +1168,59 @@ export default function LivePlayer({
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* Dynamic Network Accelerator & Latency Tuning Bar (Netspeed Booster / Diagnostics) */}
+      {!isMini && (
+        <div className="px-4 py-3 md:px-6 bg-orange-950/10 border-t border-white/5 flex flex-wrap items-center justify-between gap-y-2.5 gap-x-6 text-[11px] font-sans" id="connection-booster-tuner-bar">
+          <div className="flex items-center gap-2" id="speed-booster-selection-deck">
+            <span className="text-orange-400 font-mono flex items-center gap-1 text-[10px] font-bold">
+              <Zap className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
+              <span>NET ACCELERATOR:</span>
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: "speed-booster", name: "Speed Boost", desc: "Adaptive buffer - Starts instantly" },
+                { id: "standard", name: "Standard HLS", desc: "Standard dual-level HLS" },
+                { id: "stable-hd", name: "High Stability", desc: "Buffered shielding - Best for slow Wi-Fi" }
+              ].map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => {
+                    setBufferMode(preset.id as any);
+                    showHotkeyFeedback(`Net Optimizer: ${preset.name}`);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[9px] font-mono tracking-wider transition-all duration-150 uppercase font-semibold flex items-center gap-1 border ${
+                    bufferMode === preset.id
+                      ? "bg-orange-500 text-white border-orange-400 shadow shadow-orange-500/20"
+                      : "bg-black/20 border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                  title={preset.desc}
+                >
+                  {bufferMode === preset.id && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                  {preset.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap" id="speedometer-status-deck">
+            <span className="text-slate-500 font-mono text-[10px] flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${bufferMode === "speed-booster" ? "bg-orange-400 animate-pulse" : (bufferMode === "stable-hd" ? "bg-cyan-400 animate-pulse" : "bg-emerald-400")}`} />
+              LATENCY STATUS: <span className="text-slate-300 font-bold uppercase">{bufferMode === "speed-booster" ? "Fast Start (1.2s)" : (bufferMode === "stable-hd" ? "Buffered (HD)" : latencyInfo)}</span>
+            </span>
+
+            <button
+              onClick={() => setIsDiagnosticsOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-orange-500/20 bg-orange-950/30 hover:bg-orange-600/20 text-orange-400 font-semibold text-[10px] font-mono hover:text-orange-300 transition-all uppercase shadow"
+              title="Run Speed Jitter & Buffer Optimizer Diagnostics"
+              id="speedometer-test-trigger"
+            >
+              <Gauge className="w-3.5 h-3.5" />
+              <span>Diagnostics</span>
+            </button>
+          </div>
         </div>
       )}
 

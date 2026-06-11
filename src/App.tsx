@@ -40,7 +40,7 @@ export default function App() {
           if (!resp.ok) throw new Error("Server failed to refresh source links.");
         } catch (err) {
           console.warn("Backend refresh endpoint is unavailable, performing direct client-side fetch instead.");
-          const clientChannels = await fetchChannelsClientSide();
+          const clientChannels = await fetchChannelsClientSide(true);
           setChannels(clientChannels);
           return;
         }
@@ -62,7 +62,7 @@ export default function App() {
       } catch (srvError) {
         console.warn("Express backend API /api/channels is unavailable or returned error. Falling back to direct client-side extraction.", srvError);
         // Direct browser fallback to raw channels to ensure continuous play in Vercel, Netlify, or static server setups
-        const clientChannels = await fetchChannelsClientSide();
+        const clientChannels = await fetchChannelsClientSide(forceRefresh);
         setChannels(clientChannels);
       }
     } catch (e: any) {

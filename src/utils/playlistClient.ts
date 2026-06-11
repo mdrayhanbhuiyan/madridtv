@@ -70,7 +70,30 @@ function parseM3U(m3uContent: string): Channel[] {
   return channels;
 }
 
-export async function fetchChannelsClientSide(): Promise<Channel[]> {
+export async function fetchChannelsClientSide(forceRefresh = false): Promise<Channel[]> {
+  const cacheKey = "iptv_channels_cache";
+  const cacheTimeKey = "iptv_channels_cache_time";
+  const cacheDurationMs = 10 * 60 * 1000; // 10 minutes local cache lifetime
+
+  if (!forceRefresh) {
+    try {
+      const cachedData = localStorage.getItem(cacheKey);
+      const cachedTime = localStorage.getItem(cacheTimeKey);
+      if (cachedData && cachedTime) {
+        const elapsed = Date.now() - parseInt(cachedTime, 10);
+        if (elapsed < cacheDurationMs) {
+          const channels = JSON.parse(cachedData);
+          if (Array.isArray(channels) && channels.length > 0) {
+            console.log(`[Client-Side Cache Optimizer] Load successful! Delivered ${channels.length} channels instantly from memory cache.`);
+            return channels;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[Client-Side Cache Optimizer] Failed reading cache. Safe recovery to network fetch.", err);
+    }
+  }
+
   console.log('[Client-Side Fallback] Fetching IPTV playlist and features from GitHub directly...');
   
   // 1. Fetch main M3U playlist
@@ -118,5 +141,14 @@ export async function fetchChannelsClientSide(): Promise<Channel[]> {
   }
 
   console.log(`[Client-Side Fallback] Successfully parsed ${parsedChannels.length} IPTV channels`);
+  
+  // Save to client cache
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify(parsedChannels));
+    localStorage.setItem(cacheTimeKey, Date.now().toString());
+  } catch (err) {
+    console.warn("[Client-Side Cache Optimizer] Failed storing content in localStorage (quota limits likely).", err);
+  }
+
   return parsedChannels;
 }
