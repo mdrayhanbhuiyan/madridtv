@@ -11,7 +11,14 @@ import {
   AlertCircle, 
   Loader2, 
   Link2, 
-  Image as ImageIcon 
+  Image as ImageIcon,
+  BarChart3,
+  Users,
+  Clock,
+  Smartphone,
+  Laptop,
+  Monitor,
+  Globe
 } from "lucide-react";
 import { Channel } from "../types";
 import { Language } from "../utils/translations";
@@ -58,6 +65,12 @@ export default function AdminPanel({ isOpen, onClose, lang, onChannelsChanged }:
   const [isAddingChannel, setIsAddingChannel] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Admin Panel Tab Selection and Analytics Telemetry States
+  const [activeTab, setActiveTab] = useState<"streams" | "analytics">("streams");
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState("");
+
   // Quick verify session token on mount
   useEffect(() => {
     try {
@@ -93,11 +106,43 @@ export default function AdminPanel({ isOpen, onClose, lang, onChannelsChanged }:
     }
   };
 
+  const fetchAnalytics = async (silent = false) => {
+    if (!silent) setIsLoadingAnalytics(true);
+    setAnalyticsError("");
+    try {
+      const res = await fetch("/api/admin/analytics");
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success) {
+          setAnalyticsData(data);
+        } else {
+          setAnalyticsError("Failed parsing analytics server response.");
+        }
+      } else {
+        setAnalyticsError("Error response loading analytics from back-end.");
+      }
+    } catch (err: any) {
+      setAnalyticsError(err.message || "Network failure fetching live telemetry.");
+    } finally {
+      if (!silent) setIsLoadingAnalytics(false);
+    }
+  };
+
+  // Synchronized loaders / watchers based on tab selections
   useEffect(() => {
     if (isLoggedIn && isOpen) {
-      fetchAdminChannels();
+      if (activeTab === "streams") {
+        fetchAdminChannels();
+      } else {
+        fetchAnalytics(false);
+        // Live polling every 4 seconds for ticking stay-duration telemetry!
+        const interval = setInterval(() => {
+          fetchAnalytics(true);
+        }, 4000);
+        return () => clearInterval(interval);
+      }
     }
-  }, [isLoggedIn, isOpen]);
+  }, [isLoggedIn, isOpen, activeTab]);
 
   if (!isOpen) return null;
 
@@ -212,6 +257,16 @@ export default function AdminPanel({ isOpen, onClose, lang, onChannelsChanged }:
     }
   };
 
+  const formatSecondsDetail = (sec: number) => {
+    if (sec < 60) return lang === "bn" ? `${sec} সেকেন্ড` : `${sec}s`;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    if (lang === "bn") {
+      return `${m} মি. ${s} সে.`;
+    }
+    return `${m}m ${s}s`;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in" id="admin-panel-overlay">
       
@@ -316,7 +371,43 @@ export default function AdminPanel({ isOpen, onClose, lang, onChannelsChanged }:
             </form>
           ) : (
             /* =================== SIGNED IN MANAGEMENT =================== */
-            <div className="space-y-8" id="admin-management-dashboard">
+            <div className="space-y-6" id="admin-management-dashboard">
+
+              {/* Tab Navigation header */}
+              <div className="flex bg-zinc-900/50 p-1 rounded-xl border border-white/5" id="admin-tab-bar">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("streams")}
+                  className={`flex-1 py-1.5 text-center text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    activeTab === "streams"
+                      ? "bg-lime-600 text-zinc-950 font-black shadow"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                  id="tab-streams-btn"
+                >
+                  <Tv className="w-3.5 h-3.5" />
+                  <span>{lang === "bn" ? "চ্যানেলসমূহ" : "Broadcast Channels"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("analytics")}
+                  className={`flex-1 py-1.5 text-center text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    activeTab === "analytics"
+                      ? "bg-lime-600 text-zinc-950 font-black shadow"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                  id="tab-analytics-btn"
+                >
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  <span className="flex items-center gap-1">
+                    {lang === "bn" ? "লাইভ অ্যানালিটিক্স" : "Live Analytics"}
+                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping inline-block shrink-0" />
+                  </span>
+                </button>
+              </div>
+
+              {activeTab === "streams" ? (
+                <div className="space-y-6">
               
               {/* Form to add a new channel */}
               <div className="p-5 bg-zinc-900/30 border border-white/5 rounded-2xl space-y-4" id="upload-channel-card-form">
@@ -515,6 +606,211 @@ export default function AdminPanel({ isOpen, onClose, lang, onChannelsChanged }:
                   </div>
                 )}
               </div>
+              </div>
+          ) : (
+            /* =================== LIVE DETAILED USER ANALYTICS DASHBOARD =================== */
+            <div className="space-y-5 animate-fade-in animate-once duration-300" id="analytics-telemetry-panel">
+              {isLoadingAnalytics && !analyticsData ? (
+                <div className="py-20 flex flex-col items-center justify-center text-center">
+                  <Loader2 className="w-10 h-10 text-lime-500 animate-spin" />
+                  <p className="text-xs text-slate-400 mt-3 font-mono">Connecting to real-time analytics stream...</p>
+                </div>
+              ) : analyticsError ? (
+                <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 rounded-xl text-center">
+                  {analyticsError}
+                </div>
+              ) : !analyticsData ? (
+                <p className="text-xs text-slate-500 text-center py-10 font-mono">No telemetry logged yet.</p>
+              ) : (
+                <>
+                  {/* Four Quick Bento Stats Cards */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    
+                    {/* 1. Concurrent Users */}
+                    <div className="bg-zinc-900/40 border border-white/5 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-md">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-bold font-mono text-slate-400 uppercase tracking-wider">
+                          {lang === "bn" ? "লাইভ ভিজিটর" : "Active Users"}
+                        </span>
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-baseline gap-1">
+                        <span className="text-2xl font-black text-white font-mono tracking-tight animate-pulse">
+                          {analyticsData.activeUsers}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-sans">{lang === "bn" ? "অনলাইন" : "online"}</span>
+                      </div>
+                    </div>
+
+                    {/* 2. Total Cumulative unique hits */}
+                    <div className="bg-zinc-900/40 border border-white/5 p-3 rounded-2xl flex flex-col justify-between shadow-md">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-bold font-mono text-slate-400 uppercase tracking-wider">
+                          {lang === "bn" ? "মোট ভিজিটর" : "Total Hits"}
+                        </span>
+                        <Users className="w-3.5 h-3.5 text-slate-500" />
+                      </div>
+                      <div className="mt-2 flex items-baseline gap-1">
+                        <span className="text-2xl font-black text-lime-400 font-mono tracking-tight">
+                          {analyticsData.totalVisitors.toLocaleString()}
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-sans">{lang === "bn" ? "ইউনিক" : "visits"}</span>
+                      </div>
+                    </div>
+
+                    {/* 3. Average Webpage stay-time */}
+                    <div className="bg-zinc-900/40 border border-white/5 p-3 rounded-2xl flex flex-col justify-between shadow-md">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-bold font-mono text-slate-400 uppercase tracking-wider">
+                          {lang === "bn" ? "গড় অবস্থানকাল" : "Avg Stay Time"}
+                        </span>
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                      </div>
+                      <div className="mt-2">
+                        <span className="text-[13px] font-black text-white font-mono whitespace-nowrap">
+                          {formatSecondsDetail(analyticsData.avgStayTime)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 4. Geography Countries */}
+                    <div className="bg-zinc-900/40 border border-white/5 p-3 rounded-2xl flex flex-col justify-between shadow-md">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-bold font-mono text-slate-400 uppercase tracking-wider">
+                          {lang === "bn" ? "সক্রিয় অঞ্চল" : "Regions"}
+                        </span>
+                        <Globe className="w-3.5 h-3.5 text-slate-500" />
+                      </div>
+                      <div className="mt-2">
+                        <span className="text-xs font-bold text-slate-300">
+                          {Object.keys(analyticsData.countryBreakdown).length} {lang === "bn" ? "টি দেশ" : "Countries"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Distribution statistics split layout */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    {/* Left Column: Sourced country analytics with progress bars */}
+                    <div className="p-4 bg-zinc-900/30 border border-white/5 rounded-2xl space-y-3">
+                      <h4 className="text-[11px] font-bold font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-white/5">
+                        <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{lang === "bn" ? "দেশ ভিত্তিক রিপোর্ট" : "Geographic Breakdown"}</span>
+                      </h4>
+                      
+                      <div className="space-y-3 max-h-[150px] overflow-y-auto pr-1">
+                        {Object.entries(analyticsData.countryBreakdown)
+                          .sort((a: any, b: any) => b[1] - a[1])
+                          .map(([countryName, val]: any) => {
+                            const pct = analyticsData.activeUsers > 0 
+                              ? Math.round((val / analyticsData.activeUsers) * 100) 
+                              : 0;
+                            return (
+                              <div key={countryName} className="space-y-1 text-xs">
+                                <div className="flex items-center justify-between text-slate-300 font-medium">
+                                  <span>{countryName}</span>
+                                  <span className="font-mono text-slate-400 text-[11px]">{val} {lang === "bn" ? "জন" : "users"} ({pct}%)</span>
+                                </div>
+                                <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-white/5">
+                                  <div 
+                                    className="h-full bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full transition-all duration-500" 
+                                    style={{ width: `${pct}%` }} 
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+
+                    {/* Right Column: Sourced device types */}
+                    <div className="p-4 bg-zinc-900/30 border border-white/5 rounded-2xl space-y-3">
+                      <h4 className="text-[11px] font-bold font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-white/5">
+                        <Smartphone className="w-3.5 h-3.5 text-lime-400" />
+                        <span>{lang === "bn" ? "ডিভাইস ভিত্তিক রিপোর্ট" : "Device Diagnostics"}</span>
+                      </h4>
+
+                      <div className="space-y-3 max-h-[150px] overflow-y-auto pr-1">
+                        {["Mobile", "Desktop", "Tablet", "Smart TV"].map((dev) => {
+                          const val = analyticsData.deviceBreakdown[dev] || 0;
+                          const pct = analyticsData.activeUsers > 0
+                            ? Math.round((val / analyticsData.activeUsers) * 100)
+                            : 0;
+                          
+                          return (
+                            <div key={dev} className="space-y-1 text-xs">
+                              <div className="flex items-center justify-between text-slate-300">
+                                <span className="flex items-center gap-2 font-medium">
+                                  {dev === "Desktop" && <Monitor className="w-3.5 h-3.5 text-slate-400" />}
+                                  {dev === "Mobile" && <Smartphone className="w-3.5 h-3.5 text-slate-400" />}
+                                  {dev === "Tablet" && <Laptop className="w-3.5 h-3.5 text-slate-400" />}
+                                  {dev === "Smart TV" && <Tv className="w-3.5 h-3.5 text-slate-400" />}
+                                  <span>{dev}</span>
+                                </span>
+                                <span className="font-mono text-[11px] text-slate-400">{val} ({pct}%)</span>
+                              </div>
+                              <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-white/5">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-lime-500 to-emerald-400 rounded-full transition-all duration-500" 
+                                  style={{ width: `${pct}%` }} 
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Immersive active live concurrent session records */}
+                  <div className="space-y-2" id="live-concurrent-logs-block">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-1 gap-2">
+                      <span className="text-[10px] font-black uppercase font-mono tracking-wider text-slate-400">
+                        {lang === "bn" ? "সরাসরি কানেক্টেড ইউজার সেশন লগ" : "Active Live Sessions Console"}
+                      </span>
+                      <span className="text-[9px] text-lime-400 bg-lime-500/10 px-2 py-0.5 rounded border border-lime-500/20 font-mono font-black animate-pulse">
+                        ● {lang === "bn" ? "লাইভ আপডেট হচ্ছে" : "LIVE TELEMETRY ACTIVE"}
+                      </span>
+                    </div>
+
+                    <div className="border border-white/5 bg-zinc-950/40 rounded-2xl overflow-hidden shadow-inner max-h-[170px] overflow-y-auto">
+                      <div className="grid grid-cols-4 bg-zinc-900/60 p-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-white/5 sticky top-0 z-10">
+                        <div>{lang === "bn" ? "ইউজার আইডি" : "SESSION USER"}</div>
+                        <div>{lang === "bn" ? "ডিভাইস ও আইপি" : "DEVICE & MASKED IP"}</div>
+                        <div>{lang === "bn" ? "অঞ্চল" : "GEOGRAPHY"}</div>
+                        <div className="text-right">{lang === "bn" ? "অবস্থানকাল" : "STAY DURATION"}</div>
+                      </div>
+
+                      <div className="divide-y divide-white/5 text-[11px] text-slate-300">
+                        {analyticsData.activeSessionsList.map((s: any, idx: number) => (
+                          <div key={idx} className="grid grid-cols-4 p-2.5 hover:bg-white/5 items-center transition-all">
+                            <div className="truncate font-mono flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.isReal ? "bg-red-500 animate-pulse" : "bg-lime-500"}`} />
+                              <span className={s.isReal ? "text-white font-bold" : "text-slate-400"}>
+                                {s.sid}
+                              </span>
+                            </div>
+                            <div className="truncate text-slate-400 font-mono flex items-center gap-1">
+                              <span className="text-white bg-white/5 px-1 rounded text-[9px]">{s.device}</span>
+                              <span>{s.ip}</span>
+                            </div>
+                            <div className="truncate text-slate-350">{s.country}</div>
+                            <div className="text-right font-mono text-lime-400 font-extrabold text-[11px]">
+                              {formatSecondsDetail(s.stay)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
             </div>
           )}
         </div>

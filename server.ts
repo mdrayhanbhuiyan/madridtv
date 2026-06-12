@@ -491,24 +491,104 @@ async function startServer() {
   }
 
   // Live visitors tracking actual unique concurrent tab sessions
-  const activeSessions = new Map<string, number>(); // sessionId -> timestamp
+  interface AnalyticsSession {
+    sid: string;
+    lastActive: number;
+    device: string;
+    country: string;
+    stay: number;
+    ip: string;
+  }
 
-  // Clean up stale mock/real sessions every 10 seconds
+  const activeSessions = new Map<string, AnalyticsSession>();
+
+  // Initialize with some seed data
+  const simulatedCountries = [
+    "Bangladesh 🇧🇩",
+    "Bangladesh 🇧🇩",
+    "Bangladesh 🇧🇩",
+    "Saudi Arabia 🇸🇦",
+    "United Arab Emirates 🇦🇪",
+    "Qatar 🇶🇦",
+    "India 🇮🇳",
+    "United Kingdom 🇬🇧",
+    "United States 🇺🇸",
+    "Malaysia 🇲🇾",
+    "Kuwait 🇰🇼",
+    "Oman 🇴🇲"
+  ];
+  const simulatedDevices = ["Mobile", "Mobile", "Desktop", "Tablet", "Smart TV"];
+
+  function initializeSimulations() {
+    for (let i = 1; i <= 10; i++) {
+      const c = simulatedCountries[Math.floor(Math.random() * simulatedCountries.length)];
+      const d = simulatedDevices[Math.floor(Math.random() * simulatedDevices.length)];
+      const id = `sim-${i}`;
+      activeSessions.set(id, {
+        sid: id,
+        lastActive: Date.now(),
+        device: d,
+        country: c,
+        stay: Math.floor(Math.random() * 580) + 20, // 20s to 10 mins
+        ip: `103.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`
+      });
+    }
+  }
+  initializeSimulations();
+
+  // Increment simulated session stay times and swap them occasionally to simulate real organic flow
   setInterval(() => {
     const now = Date.now();
-    for (const [sid, lastActive] of activeSessions.entries()) {
-      if (now - lastActive > 40000) { // 40 seconds threshold
-        activeSessions.delete(sid);
+    for (const [sid, sess] of activeSessions.entries()) {
+      if (sid.startsWith("sim-")) {
+        // 1. Tick up stay time
+        sess.stay += 5;
+        sess.lastActive = now;
+
+        // 2. Small chance (e.g., 5%) to cycle a simulated user out
+        if (Math.random() < 0.05) {
+          activeSessions.delete(sid);
+          
+          // Add a brand new simulated viewer
+          const newId = `sim-${Math.floor(Math.random() * 10000)}`;
+          const c = simulatedCountries[Math.floor(Math.random() * simulatedCountries.length)];
+          const d = simulatedDevices[Math.floor(Math.random() * simulatedDevices.length)];
+          activeSessions.set(newId, {
+            sid: newId,
+            lastActive: now,
+            device: d,
+            country: c,
+            stay: Math.floor(Math.random() * 8) + 1, // starting fresh
+            ip: `103.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`
+          });
+        }
+      } else {
+        // Clean up stale actual sessions: 45 seconds threshold
+        if (now - sess.lastActive > 45000) {
+          activeSessions.delete(sid);
+        }
       }
     }
-  }, 10000);
+  }, 5000);
 
   app.get("/api/visitors", (req, res) => {
     const increment = req.query.inc === "true";
     const sid = (req.query.sid as string) || "anonymous";
+    const device = (req.query.device as string) || "Desktop";
+    const country = (req.query.country as string) || "Bangladesh 🇧🇩";
+    const stay = parseInt(req.query.stay as string, 10) || 0;
 
-    // Mark current session as active
-    activeSessions.set(sid, Date.now());
+    const existing = activeSessions.get(sid);
+    const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1";
+
+    activeSessions.set(sid, {
+      sid,
+      lastActive: Date.now(),
+      device,
+      country,
+      stay: existing ? Math.max(existing.stay, stay) : stay,
+      ip: ip.split(",")[0].trim()
+    });
 
     if (increment) {
       totalVisitors += 1;
@@ -519,19 +599,49 @@ async function startServer() {
       }
     }
 
-    // Dynamic, actual-reflecting active live counts:
-    // A concrete baseline representing ongoing stadium viewers, with true session counts combined.
-    // Includes a slight +/- 3 organic wave fluctuation to appear active.
-    const realSessions = activeSessions.size;
-    const baseline = 42 + realSessions;
-    const wavePct = Math.sin(Date.now() / 25000); // cyclic wave
-    const fluctuation = Math.floor(wavePct * 4); // -4 to +4
-    const activeCount = Math.max(1, baseline + fluctuation);
-
+    // Dynamic, actual-reflecting active live counts including the simulated ones
     res.json({
       success: true,
       total: totalVisitors,
-      active: activeCount
+      active: activeSessions.size
+    });
+  });
+
+  // Detailed live analytics endpoint for the Admin panel dashboard
+  app.get("/api/admin/analytics", (req, res) => {
+    const sessions = Array.from(activeSessions.values());
+    
+    // Sort sessions by stay duration descending
+    sessions.sort((a, b) => b.stay - a.stay);
+
+    // Compute device ratios
+    const deviceCounts: Record<string, number> = {};
+    const countryCounts: Record<string, number> = {};
+    let totalStayTime = 0;
+
+    sessions.forEach(s => {
+      deviceCounts[s.device] = (deviceCounts[s.device] || 0) + 1;
+      countryCounts[s.country] = (countryCounts[s.country] || 0) + 1;
+      totalStayTime += s.stay;
+    });
+
+    const avgStayTime = sessions.length > 0 ? Math.round(totalStayTime / sessions.length) : 0;
+
+    res.json({
+      success: true,
+      activeUsers: sessions.length,
+      totalVisitors,
+      avgStayTime,
+      deviceBreakdown: deviceCounts,
+      countryBreakdown: countryCounts,
+      activeSessionsList: sessions.map(s => ({
+        sid: s.sid.startsWith("sim-") ? `Simulated #${s.sid.replace("sim-", "")}` : `Real User (${s.sid.substring(0, 8)})`,
+        isReal: !s.sid.startsWith("sim-"),
+        device: s.device,
+        country: s.country,
+        stay: s.stay,
+        ip: s.ip
+      }))
     });
   });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Tv, 
   Menu, 
@@ -22,6 +22,7 @@ import { Language, useTranslation } from "./utils/translations";
 import AdminPanel from "./components/AdminPanel";
 
 export default function App() {
+  const startTimeRef = useRef(Date.now());
   const [channels, setChannels] = useState<Channel[]>([]);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -79,7 +80,30 @@ export default function App() {
           sid = "sess-fallback";
         }
 
-        const res = await fetch(`/api/visitors?sid=${sid}${increment ? "&inc=true" : ""}`);
+        let device = "Desktop";
+        if (typeof window !== "undefined" && window.navigator && window.navigator.userAgent) {
+          const ua = window.navigator.userAgent.toLowerCase();
+          if (/mobile|iphone|ipad|ipod|android|blackberry|iemobile|opera mini/i.test(ua)) {
+            device = /ipad|tablet/i.test(ua) ? "Tablet" : "Mobile";
+          }
+        }
+
+        let country = "Bangladesh 🇧🇩";
+        try {
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (tz) {
+            if (tz.includes("Dhaka")) country = "Bangladesh 🇧🇩";
+            else if (tz.includes("Riyadh") || tz.includes("Kuwait") || tz.includes("Qatar") || tz.includes("Baghdad")) country = "Saudi Arabia 🇸🇦";
+            else if (tz.includes("London") || tz.includes("Europe")) country = "United Kingdom 🇬🇧";
+            else if (tz.includes("Kolkata") || tz.includes("Mumbai")) country = "India 🇮🇳";
+            else if (tz.includes("Kuala_Lumpur") || tz.includes("Jakarta")) country = "Malaysia 🇲🇾";
+            else if (tz.includes("New_York") || tz.includes("Chicago") || tz.includes("Los_Angeles") || tz.includes("America")) country = "United States 🇺🇸";
+          }
+        } catch (e) {}
+
+        const stay = Math.floor((Date.now() - startTimeRef.current) / 1000);
+
+        const res = await fetch(`/api/visitors?sid=${sid}&device=${device}&country=${country}&stay=${stay}${increment ? "&inc=true" : ""}`);
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data.total === "number" && typeof data.active === "number") {
