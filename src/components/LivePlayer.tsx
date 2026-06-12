@@ -90,6 +90,81 @@ export default function LivePlayer({
   const [latencyInfo, setLatencyInfo] = useState<string>("Normal");
   const [retryCount, setRetryCount] = useState(0);
 
+  const [pipelineState, setPipelineState] = useState<"direct" | "local_proxy" | "public_proxy" | "none">("none");
+  const [playingUrl, setPlayingUrl] = useState("");
+
+  const resolveStreamUrl = (url: string, pState: "direct" | "local_proxy" | "public_proxy" | "none") => {
+    if (!url) return "";
+    const u = url.toLowerCase();
+
+    // Force public CORS proxy for URLs with custom ports right away to bypass container outbound port firewalls.
+    let hasCustomPort = false;
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.port && parsedUrl.port !== "80" && parsedUrl.port !== "443") {
+        hasCustomPort = true;
+      }
+    } catch (e) {
+      if (/:\s*\d{3,5}/.test(url)) {
+        hasCustomPort = true;
+      }
+    }
+
+    if (hasCustomPort) {
+      console.log(`[Stream Pipeline] Custom port detected for ${url}. Routing through public CORS proxy.`);
+      return `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+    }
+
+    if (pState === "public_proxy") {
+      return `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+    }
+    if (pState === "local_proxy") {
+      return `/api/stream/proxy?url=${encodeURIComponent(url)}`;
+    }
+    // Direct
+    return url;
+  };
+
+  useEffect(() => {
+    const u = channel.url.toLowerCase();
+    
+    // Force public proxy for URLs with non-standard ports since dev cloud environments ban arbitary outbound ports
+    let hasCustomPort = false;
+    try {
+      const parsedUrl = new URL(channel.url);
+      if (parsedUrl.port && parsedUrl.port !== "80" && parsedUrl.port !== "443") {
+        hasCustomPort = true;
+      }
+    } catch (e) {
+      if (/:\s*\d{3,5}/.test(channel.url)) {
+        hasCustomPort = true;
+      }
+    }
+
+    let initialPipeline: "direct" | "local_proxy" | "public_proxy" = "direct";
+    if (hasCustomPort) {
+      initialPipeline = "public_proxy";
+    } else {
+      const isMajorCDN = u.includes("wurl.com") || u.includes("github") || u.includes("raw.githubusercontent");
+      const needsProxy = channel.url.startsWith("http://") || !isMajorCDN;
+
+      if (needsProxy) {
+        initialPipeline = "local_proxy";
+      } else {
+        initialPipeline = "direct";
+      }
+    }
+
+    setPipelineState(initialPipeline);
+    setPlayingUrl(resolveStreamUrl(channel.url, initialPipeline));
+  }, [channel.url]);
+
+  useEffect(() => {
+    if (pipelineState !== "none") {
+      setPlayingUrl(resolveStreamUrl(channel.url, pipelineState));
+    }
+  }, [pipelineState, channel.url]);
+
   // --- PREMIUM EXTENDED FACILITIES ---
   const [eqFilter, setEqFilter] = useState("none");
   const [isAmbientGlowActive, setIsAmbientGlowActive] = useState(true);
@@ -509,7 +584,7 @@ export default function LivePlayer({
       video.removeEventListener("leavepictureinpicture", handleLeavePiP);
       video.removeEventListener("webkitpresentationmodechanged", handleWebkitPiP);
     };
-  }, [channel.url]); // Re-subscribe when the video element/channel source is updated to keep state perfectly in-sync
+  }, [playingUrl]); // Re-subscribe when the video element/channel source is updated to keep state perfectly in-sync
 
   // Initialize and handle HLS.js streaming lifecycle
   useEffect(() => {
@@ -543,8 +618,16 @@ export default function LivePlayer({
     };
 
     const handleError = () => {
-      // Direct native fallback element errors
-      if (video.error && retryCount < 3) {
+      // Direct native fallback element errors - try the next proxy pipeline
+      if (pipelineState === "direct") {
+        console.log("[Native Player Error] Direct stream failed, escalating to local proxy...");
+        showHotkeyFeedback("Optimizing Connection...");
+        setPipelineState("local_proxy");
+      } else if (pipelineState === "local_proxy") {
+        console.log("[Native Player Error] Local proxy failed, escalating to public CORS proxy...");
+        showHotkeyFeedback("Bypassing Server Firewall...");
+        setPipelineState("public_proxy");
+      } else if (video.error && retryCount < 3) {
         console.warn(`Native player error detected. Retrying count: ${retryCount}...`);
         setRetryCount(prev => prev + 1);
         video.load();
@@ -556,7 +639,7 @@ export default function LivePlayer({
 
     // 1. Browser Native HLS Support (e.g., Safari, iOS Safari, or macOS)
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = channel.url;
+      video.src = playingUrl;
       video.addEventListener("loadedmetadata", handleLoadedMetadata);
       video.addEventListener("playing", handlePlaying);
       video.addEventListener("waiting", handleWaiting);
@@ -602,7 +685,7 @@ export default function LivePlayer({
       hls = new Hls(hlsConfig);
       hlsRef.current = hls;
 
-      hls.loadSource(channel.url);
+      hls.loadSource(playingUrl);
       hls.attachMedia(video);
 
       video.addEventListener("loadedmetadata", handleLoadedMetadata);
@@ -654,18 +737,38 @@ export default function LivePlayer({
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log("Fatal network error. Attempting HLS startLoad...");
-              hls?.startLoad();
+              if (pipelineState === "direct") {
+                console.log("[HLS Network Error] Direct stream failed, escalating to local proxy...");
+                showHotkeyFeedback("Optimizing Pipeline...");
+                setPipelineState("local_proxy");
+              } else if (pipelineState === "local_proxy") {
+                console.log("[HLS Network Error] Local proxy failed, escalating to public proxy...");
+                showHotkeyFeedback("Bypassing Server Firewall...");
+                setPipelineState("public_proxy");
+              } else {
+                console.log("Fatal network error. Attempting HLS startLoad...");
+                hls?.startLoad();
+              }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
               console.log("Fatal media sequence error. Attempting HLS recoverMediaError...");
               hls?.recoverMediaError();
               break;
             default:
-              console.error("Fatal unrecoverable HLS stack failure.");
-              setHasError(true);
-              setIsLoading(false);
-              hls?.destroy();
+              if (pipelineState === "direct") {
+                console.log("[HLS Generic Error] Direct stream failed, escalating to local proxy...");
+                showHotkeyFeedback("Optimizing Pipeline...");
+                setPipelineState("local_proxy");
+              } else if (pipelineState === "local_proxy") {
+                console.log("[HLS Generic Error] Local proxy failed, escalating to public proxy...");
+                showHotkeyFeedback("Bypassing Server Firewall...");
+                setPipelineState("public_proxy");
+              } else {
+                console.error("Fatal unrecoverable HLS stack failure.");
+                setHasError(true);
+                setIsLoading(false);
+                hls?.destroy();
+              }
               break;
           }
         }
@@ -687,7 +790,7 @@ export default function LivePlayer({
       }
       hlsRef.current = null;
     };
-  }, [channel.url, bufferMode]);
+  }, [playingUrl, bufferMode, pipelineState]);
 
   // Handle local video playback actions
   const togglePlay = () => {
@@ -791,7 +894,7 @@ export default function LivePlayer({
     setIsLoading(true);
     const video = videoRef.current;
     if (video) {
-      const url = channel.url;
+      const url = playingUrl;
       // Re-trigger reload
       video.src = "";
       video.load();

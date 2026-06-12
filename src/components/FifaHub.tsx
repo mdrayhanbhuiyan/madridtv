@@ -21,11 +21,13 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Channel } from "../types";
+import { Language } from "../utils/translations";
 
 interface FifaHubProps {
   channels: Channel[];
   onSelectChannel: (channel: Channel) => void;
   onShowNotification: (message: string) => void;
+  lang?: Language;
 }
 
 interface FifaMatch {
@@ -44,7 +46,7 @@ interface FifaMatch {
   scorers?: string;
 }
 
-export default function FifaHub({ channels, onSelectChannel, onShowNotification }: FifaHubProps) {
+export default function FifaHub({ channels, onSelectChannel, onShowNotification, lang = "en" }: FifaHubProps) {
   // Live matches state computed dynamically so they are always in active play
   const [matches, setMatches] = useState<FifaMatch[]>(() => {
     const r = new Date();
@@ -754,6 +756,18 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
     }
   }, [isAdOpen, adCountdown, onShowNotification]);
 
+  // Automatically select and autoplay FIFA+ on mount
+  useEffect(() => {
+    const fifaChannel = channels.find(c => c.id === "fifaplustv-feat" || c.name.toLowerCase().includes("fifa+"));
+    if (fifaChannel) {
+      const timer = setTimeout(() => {
+        onSelectChannel(fifaChannel);
+        onShowNotification(lang === "bn" ? "📺 ফিফা+ লাইভ স্ট্রিম স্বয়ংক্রিয়ভাবে প্লে হচ্ছে!" : "📺 FIFA+ HD Live Stream is autoplaying!");
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [channels, lang]);
+
   // Standings structure
   const groupStandings = [
     { rank: 1, team: "Mexico 🇲🇽", played: 1, won: 1, drawn: 0, lost: 0, points: 3, gd: "+1" },
@@ -810,6 +824,63 @@ export default function FifaHub({ channels, onSelectChannel, onShowNotification 
             <span className="text-slate-500 uppercase tracking-widest text-[10px]">Synchronizing live incident telemetry streams...</span>
           )}
         </div>
+      </div>
+
+      {/* FIFA+ Live Autoplay Premium Banner */}
+      <div 
+        className="bg-zinc-950 border border-lime-500/20 hover:border-lime-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-all shadow-lg shadow-black/80" 
+        id="fifa-plus-autoplay-card"
+      >
+        {/* Glow corner */}
+        <div className="absolute -left-12 -top-12 w-28 h-28 bg-lime-500/10 blur-2xl rounded-full pointer-events-none" />
+        <div className="absolute right-0 bottom-0 w-48 h-1 bg-gradient-to-r from-transparent via-lime-500/25 to-lime-500/50 pointer-events-none" />
+        
+        <div className="flex items-center gap-3.5 relative z-10 w-full sm:w-auto">
+          <div className="w-12 h-14 bg-black/60 rounded-xl border border-white/10 overflow-hidden flex items-center justify-center shrink-0 p-1 shadow-inner relative">
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-lime-500 rounded-full border border-zinc-950 animate-pulse" />
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/a/aa/FIFA_logo_without_background.svg" 
+              alt="FIFA+" 
+              className="object-contain w-full h-full"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[9px] font-black uppercase font-mono tracking-wider px-1.5 py-0.5 bg-lime-500 text-zinc-950 rounded">
+                {lang === "bn" ? "অটোপ্লে সক্রিয়" : "AUTOPLAYING NOW"}
+              </span>
+              <span className="text-[10px] text-lime-400 font-mono flex items-center gap-1 font-bold">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse shrink-0" />
+                FIFA+ TV HD
+              </span>
+            </div>
+            <h3 className="text-xs font-bold text-white mt-1.5 flex items-center gap-1.5 font-display">
+              {lang === "bn" ? "ফিফা+ এইচডি লাইভ ব্রডকাস্ট" : "FIFA World Cup Live Broadcast Feed"}
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed max-w-xl">
+              {lang === "bn" 
+                ? "ফিফা+ এইচডি চ্যানেলটি আপনার প্লেয়ারে স্বয়ংক্রিয়ভাবে চালু করা হয়েছে। নিচে পুরো রিয়েল-টাইম লাইভ ম্যাচ এবং খবর উপভোগ করুন।" 
+                : "The premium FIFA+ TV stream has been initialized automatically for this arena. Enjoy match relays, statistics, and full tournament coverages instantly."
+              }
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            const fifaChannel = channels.find(c => c.id === "fifaplustv-feat" || c.name.toLowerCase().includes("fifa+"));
+            if (fifaChannel) {
+              onSelectChannel(fifaChannel);
+              onShowNotification(lang === "bn" ? "📺 ফিফা+ লাইভ স্ট্রিম প্লেয়ারে সেট করা হয়েছে!" : "📺 Connected successfully to FIFA+ HD channel!");
+            }
+          }}
+          className="w-full sm:w-auto px-5 py-2.5 bg-lime-600 hover:bg-lime-500 text-zinc-950 font-extrabold text-xs uppercase tracking-wide rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-lime-950/20 active:scale-95 shrink-0"
+          id="fifa-plus-autoplay-retrigger-btn"
+        >
+          <Tv className="w-3.5 h-3.5" />
+          <span>{lang === "bn" ? "প্লে করুন" : "Tune Inline Player"}</span>
+        </button>
       </div>
       
       {/* Immersive Promotional Header (Real-Time World Cup Countdown) */}

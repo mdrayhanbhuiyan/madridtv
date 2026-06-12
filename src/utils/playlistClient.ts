@@ -105,40 +105,115 @@ export async function fetchChannelsClientSide(forceRefresh = false): Promise<Cha
   const m3uText = await playlistResp.text();
   const parsedChannels = parseM3U(m3uText);
 
-  // 2. Fetch features.json
-  try {
-    const featuresUrl = 'https://raw.githubusercontent.com/imShakil/tvlink/main/features.json';
-    const featuresResp = await fetch(featuresUrl);
-    if (featuresResp.ok) {
-      const schema = await featuresResp.json();
-      if (schema && schema.channels && Array.isArray(schema.channels)) {
-        const featuredChannelsList: any[] = schema.channels;
-        
-        featuredChannelsList.forEach((fc: any) => {
-          // Mark isFeatured properties based on matching name or source URLs
-          const match = parsedChannels.find(
-            c => c.url.trim() === fc.source.trim() || c.name.toLowerCase() === fc.name.toLowerCase()
-          );
-          if (match) {
-            match.isFeatured = true;
-          } else {
-            // If it's featured but not in list, we add it
-            parsedChannels.push({
-              id: fc.id || `feat-${slugify(fc.name)}-${Math.abs(hashCode(fc.source))}`,
-              name: fc.name,
-              logo: fc.logo || '',
-              url: fc.source,
-              category: fc.category === 'featured' ? 'Bangla' : normalizeCategory(fc.category || 'Others'),
-              originalGroup: fc.category || 'featured',
-              isFeatured: true
-            });
-          }
-        });
-      }
+  // Clear original M3U featured flags
+  parsedChannels.forEach(c => {
+    c.isFeatured = false;
+  });
+
+  const customFeatured: Channel[] = [
+    {
+      id: "fifaplustv-feat",
+      name: "FIFA+ TV",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/a/aa/FIFA_logo_without_background.svg",
+      url: "https://a62dad94.wurl.com/manifest/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0ZJRkFQbHVzRW5nbGlzaF9ITFM/5eac6633-2d13-4c4b-a7d9-9f627710266b/2.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "fifaplusenglish-feat",
+      name: "FIFA + English",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/a/aa/FIFA_logo_without_background.svg",
+      url: "https://andro.226503.xyz/checklist/androstreamlivebs2.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "eurosport-hd-feat",
+      name: "EuroSport HD",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/b/b5/Eurosport_1_HD.png",
+      url: "http://cdn.moviemazic.xyz:8083/Feedget/EurosportHD_17/index.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "tsports-hd-feat",
+      name: "T Sports",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/f/ff/T_Sports_logo.png",
+      url: "http://cdn.moviemazic.xyz:8083/TSportsHD/index.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "btv-hd-feat",
+      name: "BTV",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/6/6f/Bangladesh_Television_logo.png",
+      url: "http://cdn.moviemazic.xyz:8083/btv/index.m3u8",
+      category: "Bangla",
+      originalGroup: "Featured Bangla",
+      isFeatured: true
+    },
+    {
+      id: "beinsports4-feat",
+      name: "BEIN Sports 4",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/1/14/BeIN_Sports_Full_Logo.svg",
+      url: "https://andro.226503.xyz/checklist/androstreamlivebs4.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "beinsports3-feat",
+      name: "BEIN Sports 3",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/1/14/BeIN_Sports_Full_Logo.svg",
+      url: "https://andro.226503.xyz/checklist/androstreamlivebs2.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "mahsun-sports-feat",
+      name: "Mahsun Sports",
+      logo: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=128&h=128&fit=crop",
+      url: "https://andro.226503.xyz/checklist/androstreamlivebs2.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "sony-sports-3-feat",
+      name: "Sony Sports 3",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/3/30/Sony_Sports_Network_logo_2022.png",
+      url: "https://andro.226503.xyz/checklist/androstreamlivebs2.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "sony-sports-1-feat",
+      name: "Sony Sports 1",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/3/30/Sony_Sports_Network_logo_2022.png",
+      url: "https://andro.226503.xyz/checklist/androstreamlivebs2.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
+    },
+    {
+      id: "fifaplusfrance-feat",
+      name: "FIFA + France",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/a/aa/FIFA_logo_without_background.svg",
+      url: "https://andro.226503.xyz/checklist/androstreamlivebs2.m3u8",
+      category: "Sports",
+      originalGroup: "Featured Sports",
+      isFeatured: true
     }
-  } catch (e) {
-    console.warn('[Client-Side Fallback] Could not load features.json, continuing with M3U only:', e);
-  }
+  ];
+
+  // Mutate parsedChannels to inject our custom features at the beginning
+  parsedChannels.unshift(...customFeatured);
 
   console.log(`[Client-Side Fallback] Successfully parsed ${parsedChannels.length} IPTV channels`);
   

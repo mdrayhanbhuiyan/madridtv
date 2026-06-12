@@ -13,7 +13,8 @@ import {
   Grid,
   ChevronRight,
   ChevronLeft,
-  X
+  X,
+  Lock
 } from "lucide-react";
 import { Channel } from "../types";
 import { Language, useTranslation } from "../utils/translations";
@@ -27,6 +28,7 @@ interface SidebarProps {
   isOpenOnMobile: boolean;
   setIsOpenOnMobile: (open: boolean) => void;
   lang?: Language;
+  onOpenAdmin?: () => void;
 }
 
 export default function Sidebar({
@@ -37,7 +39,8 @@ export default function Sidebar({
   history,
   isOpenOnMobile,
   setIsOpenOnMobile,
-  lang = "en"
+  lang = "en",
+  onOpenAdmin
 }: SidebarProps) {
   
   const { t } = useTranslation(lang);
@@ -255,6 +258,17 @@ export default function Sidebar({
         <div className="text-[9px] text-slate-600 font-mono text-center mt-1">
           {t("streamsUpdated")}
         </div>
+
+        {onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className="w-full mt-2 py-2 bg-zinc-950 hover:bg-zinc-900 border border-white/5 hover:border-lime-500/40 text-slate-400 hover:text-lime-450 hover:text-lime-400 font-mono font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-inner shadow-black/45"
+            id="sidebar-admin-btn"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>{lang === "bn" ? "অ্যাডমিন প্যানেল" : "Admin Panel"}</span>
+          </button>
+        )}
       </div>
     </div>
   );

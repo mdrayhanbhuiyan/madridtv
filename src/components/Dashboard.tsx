@@ -168,29 +168,11 @@ export default function Dashboard({
   };
 
   const featuredChannels = useMemo(() => {
-    // Collect all favorited channels
-    const favoriteList = channels.filter(c => favorites.includes(c.id));
-    
-    // Get the base featured/fallback channels
-    const baseFeatured = channels.filter(c => c.isFeatured);
-    const fallbackList = baseFeatured.length > 0 ? baseFeatured : channels.slice(0, 8);
-    
-    let list: Channel[] = [];
-    if (favoriteList.length > 0) {
-      // User requested: "my favorites a je channel ache seta amr featured channels a 4 ta te swap kore deow"
-      // Swap up to 4 favorite channels into the top of the featured list
-      const topFavorites = favoriteList.slice(0, 4);
-      const remainingFeatured = fallbackList.filter(c => !topFavorites.some(fav => fav.id === c.id));
-      
-      list = [...topFavorites, ...remainingFeatured].slice(0, 10);
-    } else {
-      list = fallbackList.slice(0, 10);
-    }
-
-    // User explicitly requested: "featued channels er 1,3,4 number channel remove kore deow"
-    // Human-based indexing (1st, 3rd, 4th) refers to indices 0, 2, and 3 in Javascript arrays.
-    return list.filter((_, idx) => idx !== 0 && idx !== 2 && idx !== 3);
-  }, [channels, favorites]);
+    const featured = channels.filter(c => c.isFeatured);
+    if (featured.length > 0) return featured.slice(0, 10);
+    // Fallback if no channels are explicitly flagged: pick some top priority channels
+    return channels.slice(0, 8);
+  }, [channels]);
 
   // 2. Coming Soon Matches timers & notifications
   const [now, setNow] = useState(new Date());
@@ -259,6 +241,12 @@ export default function Dashboard({
 
   // Determine a featured banner channel to highlight of the day
   const spotlightChannel = useMemo(() => {
+    // Specifically prioritize FIFA+ TV or FIFA+ English for Featured Broadcast
+    const fifaChannel = channels.find(c => c.id === "fifaplustv-feat" || c.name.toLowerCase().includes("fifa+"));
+    if (fifaChannel) {
+      return fifaChannel;
+    }
+
     // Select the 7th channel of "Sports Arena" (category: "Sports")
     const sportsList = channels.filter(c => c.category === "Sports");
     if (sportsList.length >= 7) {
@@ -355,6 +343,7 @@ export default function Dashboard({
           channels={channels}
           onSelectChannel={onSelectChannel}
           onShowNotification={showNotification}
+          lang={lang}
         />
       ) : (
         <>
